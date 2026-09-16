@@ -18,7 +18,7 @@ Mengingat output sektor berbasis lahan dibatasi secara fisik oleh kapasitas tutu
 
 ## Data Input and Reading
 
-Terdapat 11 file data input berformat xlsx yang digunakan, yaitu:
+Terdapat 10 file data input berformat xlsx yang digunakan, yaitu:
 
 ```{r tabel-rapi, echo=FALSE, message=FALSE, warning=FALSE}
 library(knitr)
@@ -29,7 +29,7 @@ library(kableExtra)
 
 # Membuat data frame
 df <- data.frame(
-  No = 1:11,
+  No = 1:10,
   `Keterangan Data Input` = c(
     "Tabel Input-Output PADAGIMO tahun 2024",
     "Data deskripsi sektor yang berisi:<br>• Nama pendek sektor<br>• Nama singkat sektor<br>• Kategori KSM<br>• Label constrained sector<br>• Label unconstrained sector<br>• Rataan pertumbuhan PDRB ADHK (yoy) setiap sector unconstrained<br>• Jumlah tenaga kerja setiap sektor di tahun 2024",
@@ -43,9 +43,8 @@ df <- data.frame(
     <br>•manfaat tambahan 
     <br>•resiko (?)",
     "Skenario tipe 3 menggunakan asumsi perubahan komposisi input-output sektor (hilirisasi dan perubahan investasi)",
-    "Data jumlah populasi PADAGIMO tahun 2024 dan proyeksi tahun 2025 hingga 2049",
-    "Data jumlah populasi wilayah pesisir PADAGIMO tahun 2024 dan proyeksi tahun 2025 hingga 2049",
-    "Data PDRB ADHK secara timeseries dari tahun 2010 hingga 2025"
+    "Data jumlah populasi PADAGIMO tahun 2024 dan proyeksi tahun 2025 hingga 2045",
+    "Data jumlah populasi wilayah pesisir PADAGIMO tahun 2024 dan proyeksi tahun 2025 hingga 2045"
   ),
   `Nama Variabel R` = c("<code>IO PADAGIMO</code>", 
                        "<code>DeskripsiSektor</code>", 
@@ -56,8 +55,7 @@ df <- data.frame(
                        "<code>SType2</code>", 
                        "<code>SType3</code>", 
                        "<code>populasiPenduduk</code>", 
-                       "<code>populasiPendudukPesisir</code>",
-                       "<code>pdrb_decay</code>"),
+                       "<code>populasiPendudukPesisir</code>"),
   `Nama File XLSX` = c("io", 
                         "DeskripsiSektor", 
                         "LDM", 
@@ -66,9 +64,8 @@ df <- data.frame(
                         "SType1", 
                         "SType2", 
                         "SType3", 
-                        "populasi penduduk", 
-                        "populasi penduduk pesisir",
-                        "PADAGIMO_ADHK_PDRB_TimeSeries"),
+                        "populasiPenduduk", 
+                        "populasiPesisir"),
   check.names = FALSE
 )
 
@@ -135,7 +132,7 @@ SType3 <- read_excel("SType3.xlsx",
 
 populasiPenduduk <- read_excel("populasiPenduduk.xlsx", col_names = TRUE)
 
-# populasiPendudukPesisir <- read_excel("populasi penduduk pesisir.xlsx", col_names = TRUE)
+populasiPendudukPesisir <- read_excel("populasiPesisir.xlsx", col_names = TRUE)
 
  
 # Penyesuaian nama Input kolom yang dibutuhkan
@@ -150,18 +147,18 @@ baris_upah  <- 65  # Baris Kompensasi Tenaga Kerja / Gaji & Upah
 baris_surplus <- 66 # baris surplus usaha bruto
 baris_totInputPrimer <- 68
 baris_totInput <- 69
-propLuasPesisir <- 0.144
+propLuasPesisir <- 0.0595
 
 
 tahunDasar <- "2024"
-nThSimulasi <- 25
-tahunSimulasi <- 2025:2049
+nThSimulasi <- 21
+tahunSimulasi <- 2025:2045
 idFDThDasar <- "FD2024"
-rangeTahun <- 2024:2049
+rangeTahun <- 2024:2045
 kolomSType3 <- 3:ncol(SType3)
 
 thDasar <- 2024
-thAkhir <- 2049
+thAkhir <- 2045
 
 
 # marker sektor Constrained dan Unconstrained
@@ -250,7 +247,7 @@ Analisis keterkaitan sektor digunakan untuk mengetahui seberapa kuat interaksi a
 Klasifikasi sektor dalam diagram dilakukan berdasarkan Indeks Daya Penyebaran (backward linkage) dan Indeks Derajat Kepekaan (forward linkage), dengan nilai 1,00 sebagai threshold yang merepresentasikan rata-rata keterkaitan antarsektor. Dengan demikian, sektor dengan nilai indeks lebih dari 1 menunjukkan keterkaitan yang berada di atas rata-rata, sedangkan nilai kurang dari 1 menunjukkan keterkaitan yang berada di bawah rata-rata.
 
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, linkage, echo = FALSE, warning=FALSE}
 # ==============================================================================
 # MENGHITUNG Backward dan Forward Linkage
 # ==============================================================================
@@ -334,7 +331,7 @@ p_linkagePendek
 # ==============================================================================
 # ANALISIS LINKAGE BERDASARKAN KATEGORI SEKTOR MAKRO (KSM)
 # ==============================================================================
-# 1. Agregasi Rata-Rata ITBL dan ITFL Berdasarkan Kolom KSM (17 Sektor Makro)
+# 1. Agregasi Rata-Rata ITBL dan ITFL Berdasarkan Kolom KSM
 tabel_kuadran_ksm <- tabel_kuadran %>%
   filter(!is.na(KSM) & KSM != "") %>%
   group_by(KSM) %>%
@@ -345,8 +342,8 @@ tabel_kuadran_ksm <- tabel_kuadran %>%
     .groups = "drop"
   ) %>%
   mutate(
-    # Format teks KSM agar otomatis enter (wrap) jika lebih dari 25 karakter
-    KSM_label = str_wrap(KSM, width = 25),
+    # Format teks KSM agar wrap jika lebih dari 22 karakter
+    KSM_label = str_wrap(KSM, width = 22),
     
     Kuadran = case_when(
       Mean_ITBL > 1 & Mean_ITFL > 1  ~ "K1 (BL Tinggi, FL Tinggi)",
@@ -358,85 +355,120 @@ tabel_kuadran_ksm <- tabel_kuadran %>%
       Mean_ITBL > 1 & Mean_ITFL > 1  ~ "Sektor Kunci (Key Sector)",
       Mean_ITBL > 1 & Mean_ITFL <= 1 ~ "Sektor Pendorong Hulu (Backward-Oriented)",
       Mean_ITBL <= 1 & Mean_ITFL > 1 ~ "Sektor Pendukung Hilir (Forward-Oriented)",
-      TRUE                           ~ "Sektor Lemah / Terisolasi (Weak Sector)"
-    )
+      TRUE                           ~ "Sektor Terisolasi / Lemah (Weak Sector)"
+    ),
+    Kuadran = factor(Kuadran, levels = c(
+      "K1 (BL Tinggi, FL Tinggi)",
+      "K2 (BL Tinggi, FL Rendah)",
+      "K3 (BL Rendah, FL Tinggi)",
+      "K4 (BL Rendah, FL Rendah)"
+    ))
   )
 
-# 3. Visualisasi Diagram Kuadran Linkage Tingkat KSM
-p_linkage_ksm <- ggplot(tabel_kuadran_ksm, aes(x = Mean_ITBL, y = Mean_ITFL, label = KSM_label)) +
-  geom_point(aes(color = Kuadran, size = Jumlah_Sektor_Mikro), alpha = 0.8) +
+# 2. Hitung Batas Range Sumbu Otomatis (Dengan Margin 15% untuk Pelebaran Canvas)
+x_min <- min(tabel_kuadran_ksm$Mean_ITBL, na.rm = TRUE) * 0.85
+x_max <- max(tabel_kuadran_ksm$Mean_ITBL, na.rm = TRUE) * 1.15
+y_min <- min(tabel_kuadran_ksm$Mean_ITFL, na.rm = TRUE) * 0.85
+y_max <- max(tabel_kuadran_ksm$Mean_ITFL, na.rm = TRUE) * 1.15
+
+# 3. Visualisasi Diagram Kuadran Linkage Tingkat KSM (Anti-Overlap)
+p_linkage_ksm <- ggplot(tabel_kuadran_ksm, aes(x = Mean_ITBL, y = Mean_ITFL)) +
+  
   
   # Garis Threshold Indeks = 1.00
-  geom_hline(yintercept = 1, linetype = "dashed", color = "red", linewidth = 0.8) +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "red", linewidth = 0.8) +
+  geom_hline(yintercept = 1.0, linetype = "dashed", color = "red", linewidth = 0.8) +
+  geom_vline(xintercept = 1.0, linetype = "dashed", color = "red", linewidth = 0.8) +
   
-  # Repel Label Nama KSM (Disesuaikan agar tidak bertumpuk)
+  # Point Bubble Chart
+  geom_point(aes(color = Kuadran, size = Jumlah_Sektor_Mikro), alpha = 0.85) +
+  
+  # Repel Label Teks Anti-Bertimpa
   geom_text_repel(
-    size = 3.0,                  # Ukuran font dikecilkan sedikit
-    fontface = "bold", 
-    max.overlaps = Inf,          # Tampilkan semua label tanpa membuang teks
-    box.padding = 0.6,           # Jarak antar label diperluas
-    point.padding = 0.5,         # Jarak label ke titik lingkaran
-    segment.color = "grey50",    # Warna garis penunjuk
-    segment.size = 0.4,          # Ketebalan garis penunjuk
-    min.segment.length = 0,      # Selalu munculkan garis penunjuk jika label digeser
-    lineheight = 0.95            # Jarak antar baris teks (karena di-wrap)
+    aes(label = KSM_label),
+    size                   = 3.2,
+    fontface               = "bold",
+    max.overlaps           = Inf,
+    box.padding            = 0.5,
+    point.padding          = 0.4,
+    segment.color          = "gray40",
+    segment.linewidth      = 0.4,
+    min.segment.length     = 0.1,
+    force                  = 3,
+    force_pull             = 1,
+    lineheight             = 0.9
   ) +
   
-  # Kustomisasi Skala dan Label
-  scale_size_continuous(name = "Jumlah Sektor Mikro", range = c(3, 8)) +
+  # Kustomisasi Skala Sumbu X & Y dan Warna
+  scale_size_continuous(name = "Jumlah Sektor Mikro", range = c(4, 11)) +
   scale_color_manual(
+    name = "Klasifikasi Kuadran",
     values = c(
-      "K1 (BL Tinggi, FL Tinggi)" = "#C62828",  # Merah
+      "K1 (BL Tinggi, FL Tinggi)" = "#C62828", # Merah
       "K2 (BL Tinggi, FL Rendah)" = "#2E7D32", # Hijau
-      "K3 (BL Rendah, FL Tinggi)" = "#00838F", # Cyan gelap (agar lebih terbaca)
+      "K3 (BL Rendah, FL Tinggi)" = "#00838F", # Cyan Gelap
       "K4 (BL Rendah, FL Rendah)" = "#8E24AA"  # Ungu
     )
   ) +
+  scale_x_continuous(breaks = seq(0.8, 1.4, by = 0.1), limits = c(x_min, x_max)) +
+  scale_y_continuous(breaks = seq(0.8, 2.4, by = 0.2), limits = c(y_min, y_max)) +
+  
   labs(
-    title = "Diagram Kuadran Linkage Sektor Ekonomi Berdasarkan KSM",
+    title    = "Diagram Kuadran Linkage Sektor Ekonomi Berdasarkan KSM",
     subtitle = "Agregasi Tingkat Klasifikasi Sektor Makro (KSM) PADAGIMO 2024",
-    x = "Indeks Total Backward Linkage Rata-Rata (ITBL)",
-    y = "Indeks Total Forward Linkage Rata-Rata (ITFL)",
-    color = "Klasifikasi Kuadran"
+    x        = "Indeks Total Backward Linkage Rata-Rata (ITBL)",
+    y        = "Indeks Total Forward Linkage Rata-Rata (ITFL)"
   ) +
   theme_minimal(base_size = 12) +
   theme(
-    plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
-    plot.subtitle = element_text(hjust = 0.5, color = "gray30"),
-    legend.position = "bottom",
-    legend.box = "vertical",
-    legend.title = element_text(face = "bold", size = 10),
-    legend.text = element_text(size = 9),
+    plot.title       = element_text(face = "bold", hjust = 0.5, size = 15, color = "gray20"),
+    plot.subtitle    = element_text(hjust = 0.5, color = "gray40", size = 11),
+    axis.title       = element_text(face = "bold", color = "gray30", size = 11),
+    axis.text        = element_text(color = "gray20"),
+    legend.position  = "bottom",
+    legend.box       = "vertical",
+    legend.title     = element_text(face = "bold", size = 10),
+    legend.text      = element_text(size = 9),
     panel.grid.minor = element_blank()
   )
 
-# Tampilkan Chart Kuadran KSM
+# Tampilkan Plot
 print(p_linkage_ksm)
 
-# Simpan hasil grafik dengan resolusi tinggi & ukuran canvas lebar agar teks tidak berhimpitan
-ggsave(
-  filename = "Diagram_Kuadran_KSM.png", 
-  plot = p_linkage_ksm, 
-  width = 12, 
-  height = 9, 
-  dpi = 300
-)
+# 4. Tabel HTML R Markdown (KableExtra Style)
+tabel_kuadran_ksm %>%
+  select(KSM, Jumlah_Sektor_Mikro, Mean_ITBL, Mean_ITFL, Kuadran, Kategori) %>%
+  mutate(
+    Mean_ITBL = number(Mean_ITBL, accuracy = 0.0001),
+    Mean_ITFL = number(Mean_ITFL, accuracy = 0.0001)
+  ) %>%
+  knitr::kable(
+    row.names   = FALSE,
+    caption     = "Tabel Indeks Linkage Agregat Sektor Makro (KSM) PADAGIMO 2024",
+    col.names   = c("Sektor Makro (KSM)", "Jml Sektor", "Rerata ITBL", "Rerata ITFL", "Kuadran", "Klasifikasi Peran"),
+    align       = c("l", "c", "r", "r", "l", "l")
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width        = TRUE,
+    position          = "center"
+  ) %>%
+  row_spec(0, bold = TRUE, extra_css = "border-top: 2px solid #ccc; border-bottom: 2px solid #ccc;")
 
-
-# 2. Cetak Tabel Ringkasan Kuadran KSM (Format DT)
+# 5. Tabel Interaktif HTML (DT Format)
 df_tabel_kuadran_ksm <- datatable(
   tabel_kuadran_ksm %>%
+    select(KSM, Jumlah_Sektor_Mikro, Mean_ITBL, Mean_ITFL, Kuadran, Kategori) %>%
     mutate(
       Mean_ITBL = round(Mean_ITBL, 4),
       Mean_ITFL = round(Mean_ITFL, 4)
     ),
-  caption = "Tabel Indeks Linkage Agregat Klasifikasi Sektor Makro (KSM) PADAGIMO 2024",
+  caption = "Tabel Interaktif Indeks Linkage Klasifikasi Sektor Makro (KSM) PADAGIMO 2024",
+  colnames = c("Sektor Makro (KSM)", "Jumlah Sektor", "Rerata ITBL", "Rerata ITFL", "Kuadran", "Kategori Strategis"),
   options = list(pageLength = 10, autoWidth = TRUE)
 )
 
-# Tampilkan Tabel
 df_tabel_kuadran_ksm
+
 
 
 ```
@@ -445,11 +477,11 @@ df_tabel_kuadran_ksm
 
 Analisis multiplier digunakan untuk mengetahui besarnya dampak ekonomi yang ditimbulkan oleh perubahan permintaan akhir pada suatu sektor terhadap perekonomian secara keseluruhan. Dampak ekonomi yang dianalisis meliputi output, tenaga kerja, pendapatan, dan kebutuhan impor.
 
-Output multiplier menunjukkan besarnya perubahan total output seluruh sektor yang ditimbulkan oleh adanya perubahan permintaan akhir pada suatu sektor. Hasil analisis output multiplier di wilayah PADAGIMO tahun 2024 menunjukkan bahwa sektor industri barang galian bukan logam memiliki nilai output multiplier tertinggi, diikuti oleh sektor ketenagalistrikan, angkutan perairan, angkutan udara, dan industri logam dasar. Sektor industri barang galian bukan logam memiliki nilai output multiplier sebesar 0,2881. Artinya, setiap peningkatan permintaan akhir sebesar Rp1 juta pada sektor tersebut akan mendorong peningkatan output perekonomian secara keseluruhan sebesar sekitar Rp288 ribu melalui keterkaitan antarsektor.
+Output multiplier menunjukkan besarnya perubahan total output seluruh sektor yang ditimbulkan oleh adanya perubahan permintaan akhir pada suatu sektor. Hasil analisis output multiplier di wilayah PADAGIMO tahun 2024 menunjukkan bahwa sektor penggilingan padi memiliki nilai output multiplier tertinggi, diikuti oleh sektor Kayu gergajian dan informasi & komunikasi. Sektor penggilingan padi memiliki nilai output multiplier sebesar 1.9705. Artinya, setiap peningkatan permintaan akhir sebesar Rp1 juta pada sektor tersebut akan mendorong peningkatan output perekonomian secara keseluruhan sebesar sekitar Rp 1,97 juta melalui keterkaitan antarsektor.
 
 Dari 15 sektor dengan nilai output multiplier tertinggi, belum terdapat sektor berbasis lahan yang masuk dalam kelompok tersebut. Hal ini menunjukkan bahwa, berdasarkan struktur keterkaitan input-output PADAGIMO tahun 2024, sektor berbasis lahan belum menjadi sektor yang memiliki efek pengganda output paling besar dibandingkan sektor-sektor lainnya.
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, output-multiplier, multiplier, echo = FALSE, warning=FALSE}
 # ==============================================================================
 # MENGHITUNG MULTIPLIERS (OUTPUT, INCOME, LABOUR, IMPORT)
 # TINGKAT SEKTORAL DAN RATA-RATA KSM (SEKTOR MAKRO)
@@ -694,29 +726,29 @@ Analisis Labour effect menunjukkan besarnya tambahan tenaga kerja yang terserap 
 
 Hasil analisis labour effect di wilayah PADAGIMO tahun 2024 menunjukkan bahwa sektor Perikanan tangkap memiliki labour effect tertinggi (0,4594), diikuti oleh sektor perikanan budidaya payau/laut (0.2937). Nilai labour effect sektor perikanan tangkap sebesar 0,4594 bermakna bahwa setiap peningkatan permintaan akhir sebesar Rp1 juta pada sektor tersebut berpotensi meningkatkan penyerapan tenaga kerja sekitar 0,4594 orang, atau setara dengan sekitar 46 orang untuk setiap peningkatan permintaan akhir sebanyak Rp1 miliar.
 
-Berbeda dengan hasil output multiplier, sektor berbasis lahan cukup dominan dalam labour effect. Dari 15 sektor dengan nilai labour effect tertinggi, sebagian besar merupakan sektor berbasis lahan  antara lain sektor perikanan tangkap, perikanan budidaya, produk peternakan, budidaya rumput laut, kopi, perikanan budidaya air tawar, unggas, dan sayuran.  Hal ini menunjukkan bahwa sektor berbasis lahan di PADAGIMO memiliki peran yang relatif besar dalam penyerapan tenaga kerja.
+Berbeda dengan hasil output multiplier, sektor berbasis lahan cukup dominan dalam labour effect. Dari 15 sektor dengan nilai labour effect tertinggi, sebagian besar merupakan sektor berbasis lahan  antara lain sektor produk peternakan lainnya, budidaya rumput laut, kopi, perikanan budidaya air tawar, unggas, dan sayuran.  Hal ini menunjukkan bahwa sektor berbasis lahan di PADAGIMO memiliki peran yang relatif besar dalam penyerapan tenaga kerja.
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, labor-multiplier, echo = FALSE, warning=FALSE}
 p_labour_colored
 
 ```
 
-Analisis income effect (efek pendapatan) digunakan untuk mengetahui besarnya dampak peningkatan permintaan akhir suatu sektor terhadap pendapatan rumah tangga yang dihasilkan dalam perekonomian. Hasil analisis income effect di wilayah PADAGIMO tahun 2024 menunjukkan bahwa sektor administrasi pemerintah, pertahanan & jaminan sosial wajib memiliki nilai income effect tertinggi, yaitu sebesar 0,6683, diikuti oleh budidaya rumput laut (0,5757). Artinya, setiap peningkatan permintaan akhir sebesar Rp1 juta pada sektor administrasi pemerintah, pertahanan & jaminan sosial wajib akan mendorong peningkatan pendapatan rumah tangga sekitar Rp545 ribu melalui aktivitas ekonomi yang tercipta dalam perekonomian.
+Analisis income effect (efek pendapatan) digunakan untuk mengetahui besarnya dampak peningkatan permintaan akhir suatu sektor terhadap pendapatan rumah tangga yang dihasilkan dalam perekonomian. Hasil analisis income effect di wilayah PADAGIMO tahun 2024 menunjukkan bahwa sektor administrasi pemerintah, pertahanan & jaminan sosial wajib memiliki nilai income effect tertinggi, yaitu sebesar 0,6683, diikuti oleh budidaya rumput laut (0,5757). Artinya, setiap peningkatan permintaan akhir sebesar Rp1 juta pada sektor administrasi pemerintah, pertahanan & jaminan sosial wajib akan mendorong peningkatan pendapatan rumah tangga sekitar Rp 668 ribu melalui aktivitas ekonomi yang tercipta dalam perekonomian.
 
-Dari 15 sektor dengan nilai income effect tertinggi, terdapat beberapa sektor berbasis lahan yaitu budaiya rumput laut, kakao, unggas, umbi-umbian, sapi/kerbau dan kemabing/domba, padi, rotan dan HHBK lainnya. Hal ini menunjukkan bahwa berdasarkan struktur perekonomian PADAGIMO tahun 2024, sektor berbasis lahan di PADAGIMO memiliki peran yang relatif besar dalam menghasilkan pendapatan rumah tangga.
+Dari 15 sektor dengan nilai income effect tertinggi, terdapat beberapa sektor berbasis lahan yaitu budaiya rumput laut, kakao, unggas, umbi-umbian, sapi/kerbau dan kambing/domba, padi, rotan dan HHBK lainnya. Hal ini menunjukkan bahwa berdasarkan struktur perekonomian PADAGIMO tahun 2024, sektor berbasis lahan di PADAGIMO memiliki peran yang relatif besar dalam menghasilkan pendapatan rumah tangga.
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, income-multiplier, echo = FALSE, warning=FALSE}
 p_income_colored
 
 ```
 
 Analisis import effect (efek kebocoran impor) digunakan untuk mengetahui besarnya kebutuhan input impor yang timbul akibat peningkatan permintaan akhir pada suatu sektor. Indikator ini menunjukkan seberapa besar bagian dari tambahan permintaan akhir yang harus dipenuhi melalui input dari luar wilayah, sehingga semakin tinggi nilai import effect, semakin besar pula potensi kebocoran ekonomi melalui impor.
 
-Hasil analisis import effect di wilayah PADAGIMO tahun 2024 menunjukkan bahwa sektor pengolahan kakao memiliki nilai import effect tertinggi, yaitu sebesar 0,6392, diikuti oleh pengadaan listrik & gas & air bersih (0,4975), pengolahan dan kerajinan rotan (0,3618). Artinya, setiap peningkatan permintaan akhir sebesar Rp1 juta pada sektor pengolahan kakao akan memunculkan kebutuhan input impor sekitar Rp639 ribu. Dengan demikian, relatif tingginya nilai import effect pada sektor tersebut menunjukkan bahwa aktivitas produksinya masih memiliki ketergantungan yang cukup besar terhadap input yang berasal dari luar wilayah PADAGIMO.
+Hasil analisis import effect di wilayah PADAGIMO tahun 2024 menunjukkan bahwa sektor pengolahan kakao memiliki nilai import effect tertinggi, yaitu sebesar 0,6392, diikuti oleh pengadaan listrik, gas & air bersih (0,4975), serta pengolahan dan kerajinan rotan (0,3618). Untuk sektor pengolahan kakao yang tertinggi memiliki arti, setiap peningkatan permintaan akhir sebesar Rp1 juta pada sektor pengolahan kakao akan memunculkan kebutuhan input impor sekitar Rp639 ribu. Dengan demikian, relatif tingginya nilai import effect pada sektor tersebut menunjukkan bahwa aktivitas produksinya masih memiliki ketergantungan yang cukup besar terhadap input yang berasal dari luar wilayah PADAGIMO.
 
 Dari 15 sektor dengan nilai import effect tertinggi, tidak terdapat sektor berbasis lahan. Hal ini menunjukkan bahwa sektor berbasis lahan di PADAGIMO relatif memiliki kebutuhan input impor yang lebih rendah dibandingkan sektor-sektor lainnya. Kondisi tersebut dapat menjadi indikasi bahwa pengembangan sektor berbasis lahan berpotensi menghasilkan kebocoran impor yang relatif lebih kecil.
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, import-multiplier, echo = FALSE, warning=FALSE}
 p_import_colored
 
 ```
@@ -725,13 +757,13 @@ p_import_colored
 
 ### Definisi
 
-Skenario ini merupakan proyeksi kondisi ekonomi dan lingkungan yang berjalan tanpa adanya intervensi kebijakan baru atau perubahan signifikan dalam tata kelola sumber daya hingga tahun 2049.
+Skenario ini merupakan proyeksi kondisi ekonomi dan lingkungan yang berjalan tanpa adanya intervensi kebijakan baru atau perubahan signifikan dalam tata kelola sumber daya hingga tahun 2045.
 
 ### Asumsi
 
 Proyeksi perubahan penggunaan lahan dimodelkan dengan mengacu pada data historis tahun 2019 sampai tahun 2024. Pertumbuhan ekonomi sektor non-LaS diproyeksikan dengan rerata pertumbuhan ekonomi 10 tahun terakhir
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, bau, echo = FALSE, warning=FALSE}
 ## Ekstrak vector rerata pertumbuhan sektor unconstrained
 rate <- DeskripsiSektor$RateUnconstrained
 
@@ -850,9 +882,9 @@ Skenario ini menerapkan prinsip integrasi pengelolaan ruang darat laut yang tert
 
 ### Asumsi
 
-Proyeksi perubahan penggunaan lahan dan pemanfaatan ruang perairan memasukkan unsur perlindungan ekosistem penting, kesesuaian lahan, akses lahan dengan skema perhutanan sosial dan tata ruang. Proyeksi pertumbuhan ekonomi sektor lahan dihitung berdasarkan Koefisien Kebutuhan Lahan 2025-2049 dan tabel Input-Output
+Proyeksi perubahan penggunaan lahan dan pemanfaatan ruang perairan memasukkan unsur perlindungan ekosistem penting, kesesuaian lahan, akses lahan dengan skema perhutanan sosial dan tata ruang. Proyeksi pertumbuhan ekonomi sektor lahan dihitung berdasarkan Koefisien Kebutuhan Lahan 2025-2045 dan tabel Input-Output
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, imlas1, echo = FALSE, warning=FALSE}
 # Loop untuk menghitung total area sektor dan Final Demand LAS dan SType1
 final_results <- matrix(NA, nrow = nrow(LDM_matrix), ncol = ncol(LASArea))
 SType1 <- as.matrix(SType1[,])
@@ -909,13 +941,13 @@ pdrb_LAS1B_total <- colSums(pdrb_LAS1B)
 
 ### Definisi
 
-Pengembangan dari IMLaS-1 dengan memasukkan peningkatan produktivitas komoditas strategi seperti padi, jagung, kacang-kacangan, umbi-umbian, sayuran, buah-buahan, kelapa, kakao, kopi, cengekeh, ungkap dan budidaya ikan pada Strategi-2 yang dicapai melalui praktik pertanian dan perikanan yang baik.
+Pengembangan dari IMLaS-1 dengan memasukkan peningkatan produktivitas komoditas strategi seperti padi, jagung, kacang-kacangan, umbi-umbian, sayuran, buah-buahan, kelapa, kakao, kopi, cengkeh, unggas, produk peternakan lainnya dan budidaya ikan pada Strategi-2 yang dicapai melalui praktik pertanian dan perikanan yang baik.
 
 ### Asumsi
 
 Seluruh asumsi pada IMLaS-1, dipadukan dengan peningkatan produktivitas melalui penerapan praktik budidaya yang baik, dan perbaikan harga melalui rantai pasok serta pemasaran yang diperkuat. Pada akhir periode simulasi, diasumsikan lebih dari 85% area sektor komoditas strategis sudah menerapkan praktik budidaya dan rantai nilai yang baik
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, imlas2, echo = FALSE, warning=FALSE}
 # Loop untuk menghitung total area sektor dan Final Demand LAS dan SType1
 final_results <- matrix(NA, nrow = nrow(LDM_matrix), ncol = ncol(LASArea))
 SType2 <- as.matrix(SType2) + 1
@@ -964,7 +996,7 @@ Pengembangan dari IMLaS-2 dengan menambahkan penguatan rantai nilai komoditas st
 
 Seluruh asumsi pada IMLaS2, dipadukan dengan upaya mengurangi ekspor bahan mentah, yang kemudian dialihkan pada proses hilirisasi melalui pengembangan industri hilir dan dan Investasi strategis secara bertahap
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, imlas3, echo = FALSE, warning=FALSE}
 SType3 <- as.matrix(SType3)
 
 Export <- as.matrix(io$X305)
@@ -1063,7 +1095,7 @@ Leontief_Inverse_full_list <- c(
   list(Year_2025 = Leontief_Inverse),
   Leontief_Inverse_sim_list
 )
-names(Leontief_Inverse_full_list) <- paste0("Year_", 2024:2049)
+names(Leontief_Inverse_full_list) <- paste0("Year_", rangeTahun)
 
 # Opsi 1: Mengakses berdasarkan nama atau indeks list
 L_tahun_1  <- Leontief_Inverse_full_list[["Year_2026"]]   # Tahun 2026
@@ -1122,7 +1154,7 @@ hasil_simulasi <- ggplot(plot_df, aes(x = Year)) +
   ) +
   scale_x_continuous(breaks = seq(2025, 2045, by = 5)) +
   labs(
-    title = "PDRB Projection Comparison: BAU vs. LAS123 (2024–2049)",
+    title = "PDRB Projection Comparison: BAU vs. LAS123 (2024–2045)",
     x = "Year",
     y = "Total PDRB (Juta Rupiah)"
   ) +
@@ -1137,11 +1169,11 @@ hasil_simulasi <- ggplot(plot_df, aes(x = Year)) +
 
 ## PDRB
 
-Pendapatan domestik regional bruto merupakan salah satu indikator kinerja perekonomian suatu wilayah. Proyeksi terhadap PDRB digunakan untuk mengetahui gambaran mengenai arah pertumbuhan ekonomi di suatu wilayah yang didasarkan pada dua skenario utama yakni BaU serta skenario intervensi IMLaS. Skenario BaU didasarkan pada asumsi bahwa kondisi ekonomi dan lingkungan yang berjalan tanpa adanya intervensi kebijakan baru atau perubahan signifikan dalam tata kelola sumber daya hingga tahun 2049. Skenario IMLaS-3 didasarkan pada asumsi bahwa terjadi perubahan penggunaan ruang darat laut melalui kebijakan pengelolaan yang terintegrasi serta usaha peningkatan produktivitas komoditas strategis dibarengi dengan hilirisasi dan peningkatan investasi. Komoditas strategis yang dilakukan intervensi pada IMLaS diantaranya adalah padi, jagun, umbi-umbian, sayuran, buah-buahan, tanaman pangan, kopi, kakao, kelapa, kelapa sawit, peternakan, dan perikanan yang tertuang pada Strategi-2.
+Pendapatan domestik regional bruto merupakan salah satu indikator kinerja perekonomian suatu wilayah. Proyeksi terhadap PDRB digunakan untuk mengetahui gambaran mengenai arah pertumbuhan ekonomi di suatu wilayah yang didasarkan pada dua skenario utama yakni BaU serta skenario intervensi IMLaS. Skenario BaU didasarkan pada asumsi bahwa kondisi ekonomi dan lingkungan yang berjalan tanpa adanya intervensi kebijakan baru atau perubahan signifikan dalam tata kelola sumber daya hingga tahun 2045. Skenario IMLaS-3 didasarkan pada asumsi bahwa terjadi perubahan penggunaan ruang darat laut melalui kebijakan pengelolaan yang terintegrasi serta usaha peningkatan produktivitas komoditas strategis dibarengi dengan hilirisasi dan peningkatan investasi. Komoditas strategis yang dilakukan intervensi pada IMLaS diantaranya adalah padi, jagun, umbi-umbian, sayuran, buah-buahan, tanaman pangan, kopi, kakao, kelapa, kelapa sawit, peternakan, dan perikanan yang tertuang pada Strategi-2.
 
-Hasil proyeksi menunjukkan bahwa pada akhir periode simulasi tahun 2049, penerapan skenario IMLaS mampu menghasilkan PDRB sebanyak <span style="background-color: #ff0000; bold;">XXX</span> triliun rupiah. Angka tersebut <span style="background-color: #ff0000; bold;">5,2%</span> lebih besar ketimbang hasil proyeksi PDRB menggunakan skenario BaU yakni <span style="background-color: #ff0000; bold;">542,2</span> triliun rupiah. Penerapan intervensi skenario IMLaS menunjukkan bahwa rerata laju pertumbuhan ekonomi keseluruhan sektor diproyeksikan sebesar <span style="background-color: #ff0000; bold;">4,02%</span> (lebih besar ketimbang skenario BAU sebesar <span style="background-color: #ff0000; bold;">3,76%</span>). Hal ini didorong oleh pertumbuhan sektor SDA dengan perubahan rerata laju pertumbuhan dari <span style="background-color: #ff0000; bold;">2%</span> (Skenario BaU) menjadi <span style="background-color: #ff0000; bold;">4%</span> (Skenario IMLaS).
+Hasil proyeksi menunjukkan bahwa pada akhir periode simulasi tahun 2045, penerapan skenario IMLaS mampu menghasilkan PDRB sebanyak <span style="background-color: #ff0000; bold;">XXX</span> triliun rupiah. Angka tersebut <span style="background-color: #ff0000; bold;">5,2%</span> lebih besar ketimbang hasil proyeksi PDRB menggunakan skenario BaU yakni <span style="background-color: #ff0000; bold;">542,2</span> triliun rupiah. Penerapan intervensi skenario IMLaS menunjukkan bahwa rerata laju pertumbuhan ekonomi keseluruhan sektor diproyeksikan sebesar <span style="background-color: #ff0000; bold;">4,02%</span> (lebih besar ketimbang skenario BAU sebesar <span style="background-color: #ff0000; bold;">3,76%</span>). Hal ini didorong oleh pertumbuhan sektor SDA dengan perubahan rerata laju pertumbuhan dari <span style="background-color: #ff0000; bold;">2%</span> (Skenario BaU) menjadi <span style="background-color: #ff0000; bold;">4%</span> (Skenario IMLaS).
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, pdrb, echo = FALSE, warning=FALSE}
 #Tabel PDRB BAU, LAS1, LAS1+2, LAS1+2+3 seluruh PADAGIMO
 final_pdrb <- plot_df
 write_xlsx(final_pdrb, "Final_PDRB_SOLUSI_PADAGIMO.xlsx")
@@ -1200,7 +1232,7 @@ ggplot(df_2045, aes(x = Scenario, y = PDRB, fill = Scenario)) +
   ) +
   scale_y_continuous(labels = scales::comma) +
   labs(
-    title = "Projected PDRB Comparison by Scenario (Year 2049)",
+    title = "Projected PDRB Comparison by Scenario (Year 2045)",
     x = "Scenario",
     y = "Total PDRB  (Juta Rupiah)"
   ) +
@@ -1236,7 +1268,7 @@ res_LAS12  <- hitung_pdrb_kelompok(pdrb_LAS12)  # Asumsi pdrb_LAS12 adalah matri
 res_LAS123 <- hitung_pdrb_kelompok(pdrb_LAS123) # Asumsi pdrb_LAS123 adalah matriks 66x21
 
 # ==============================================================================
-# PERHITUNGAN RERATA PERTUMBUHAN TAHUNAN (CAGR 2024 - 2049)
+# PERHITUNGAN RERATA PERTUMBUHAN TAHUNAN (CAGR 2024 - 2045)
 # ==============================================================================
 
 # Rumus Compound Annual Growth Rate (CAGR): (PDRB_2045 / PDRB_2025)^(1/20) - 1
@@ -1309,7 +1341,7 @@ p_bar_growth <- ggplot(df_bar_chart, aes(x = Kelompok, y = Growth, fill = Skenar
 
   # --- Judul dan Label ---
   labs(
-    title = "Rerata Pertumbuhan Sektor Ekonomi 2025–2049",
+    title = "Rerata Pertumbuhan Sektor Ekonomi 2025–2045",
     x = NULL,
     y = NULL,
     fill = NULL
@@ -1400,7 +1432,7 @@ hasil_simulasi_label <- ggplot(plot_df, aes(x = Year)) +
 
   # --- Judul dan Format Tema ---
   labs(
-    title = "Proyeksi PDRB 2024–2049",
+    title = "Proyeksi PDRB 2024–2045",
     x = "Year",
     y = "Total PDRB (Juta Rupiah)"
   ) +
@@ -1435,12 +1467,12 @@ persen_kenaikan_pdrb_2045 <- ((pdrb_las123_2045 - pdrb_bau_2045) / pdrb_bau_2045
 # 4. Susun Data Frame Ringkasan PDRB
 df_perbandingan_pdrb <- data.frame(
   Indikator = c(
-    "PDRB BAU 2049",
-    "PDRB IMLaS-3 (LAS1+2+3) 2049",
+    "PDRB BAU 2045",
+    "PDRB IMLaS-3 (LAS1+2+3) 2045",
     "Selisih Tambahan PDRB (Juta Rp)",
     "Persentase Kenaikan dibanding BAU (%)",
-    "Rerata Laju Pertumbuhan BAU (2024–2049)",
-    "Rerata Laju Pertumbuhan IMLaS-3 (2024–2049)"
+    "Rerata Laju Pertumbuhan BAU (2024–2045)",
+    "Rerata Laju Pertumbuhan IMLaS-3 (2024–2045)"
   ),
   Nilai = c(
     sprintf("Rp %s Juta", comma(pdrb_bau_2045)),
@@ -1456,7 +1488,7 @@ df_perbandingan_pdrb <- data.frame(
 knitr::kable(
   df_perbandingan_pdrb,
   row.names = FALSE,
-  caption = "Perbandingan PDRB PADAGIMO (BAU vs. LAS1+2+3) Tahun 2049",
+  caption = "Perbandingan PDRB PADAGIMO (BAU vs. LAS1+2+3) Tahun 2045",
   col.names = c("Parameter Indikator", "Nilai Simulasi"),
   align = c("l", "r")
 ) %>%
@@ -1477,9 +1509,9 @@ Proyeksi pendapatan masyarakat di wilayah PADAGIMO didapat berdasarkan pendekata
 
 Sejalan dengan pertumbuhan PDRB regional, penerapan berbagai tingkat skenario IMLaS terbukti mampu memberikan dorongan signifikan terhadap peningkatan pendapatan per kapita di wilayah studi dibandingkan kondisi Business As Usual (BAU).
 
-Intervensi skenario IMLaS-3 diproyeksikan mampu meningkatkan rerata laju pertumbuhan pendapatan per kapita PADAGIMO menjadi <span style="background-color: #ff0000; bold;">3,2%</span>. Penerapan skenario penuh IMLaS-3 ditahun terakhir simulasi menghasilkan selisih kenaikan pendapatan masyarakat keseluruhan PADAGIMO sebesar Rp <span style="background-color: #ff0000; bold;">39,49</span> juta per kapita, lebih tinggi dibandingkan skenario BAU pada tahun 2049 (peningkatan sekitar <span style="background-color: #ff0000; bold;">5,23%</span>).
+Intervensi skenario IMLaS-3 diproyeksikan mampu meningkatkan rerata laju pertumbuhan pendapatan per kapita PADAGIMO menjadi <span style="background-color: #ff0000; bold;">3,2%</span>. Penerapan skenario penuh IMLaS-3 ditahun terakhir simulasi menghasilkan selisih kenaikan pendapatan masyarakat keseluruhan PADAGIMO sebesar Rp <span style="background-color: #ff0000; bold;">39,49</span> juta per kapita, lebih tinggi dibandingkan skenario BAU pada tahun 2045 (peningkatan sekitar <span style="background-color: #ff0000; bold;">5,23%</span>).
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, income, echo = FALSE, warning=FALSE}
 
 # ==============================================================================
 # PROYEKSI PENDAPATAN PER KAPITA - PERBAIKAN GRAFIK PRESISI TEPAT TITIK
@@ -1530,9 +1562,9 @@ df_long_kapita <- df_income_kapita %>%
 
 # 5. Penentuan Titik Awal & Akhir Dinamis Presisi
 th_awal  <- min(df_long_kapita$Year, na.rm = TRUE) # 2024
-th_akhir <- max(df_long_kapita$Year, na.rm = TRUE) # 2049
+th_akhir <- max(df_long_kapita$Year, na.rm = TRUE) # 2045
 
-# Ambil Nilai Tepat di Titik Awal (2024) & Akhir (2049)
+# Ambil Nilai Tepat di Titik Awal (2024) & Akhir (2045)
 val_awal_inc     <- df_long_kapita$Income_Kapita[df_long_kapita$Year == th_awal & df_long_kapita$Skenario_Label == "BAU"][1]
 val_bau_akhir_inc <- df_long_kapita$Income_Kapita[df_long_kapita$Year == th_akhir & df_long_kapita$Skenario_Label == "BAU"][1]
 val_las_akhir_inc <- df_long_kapita$Income_Kapita[df_long_kapita$Year == th_akhir & df_long_kapita$Skenario_Label == "IMLaS-3"][1]
@@ -1561,12 +1593,12 @@ p_income_kapita <- ggplot(df_long_kapita, aes(x = Year, y = Income_Kapita, color
            y = val_awal_inc, yend = val_awal_inc + offset_y_inc,
            color = "gray40", linewidth = 0.6) +
 
-  # Garis penunjuk nilai akhir LAS123 (2049)
+  # Garis penunjuk nilai akhir LAS123 
   annotate("segment", x = th_akhir - 0.2, xend = th_akhir - 2.5, 
            y = val_las_akhir_inc, yend = val_las_akhir_inc + offset_y_inc,
            color = "gray40", linewidth = 0.6) +
 
-  # Garis penunjuk nilai akhir BAU (2049)
+  # Garis penunjuk nilai akhir BAU 
   annotate("segment", x = th_akhir - 0.2, xend = th_akhir - 2.2, 
            y = val_bau_akhir_inc, yend = val_bau_akhir_inc - offset_y_inc,
            color = "gray40", linewidth = 0.6) +
@@ -1576,11 +1608,11 @@ p_income_kapita <- ggplot(df_long_kapita, aes(x = Year, y = Income_Kapita, color
   annotate("label", x = th_awal + 2.2, y = val_awal_inc + offset_y_inc + (y_range_inc * 0.02), 
            label = lbl_awal_inc, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
 
-  # Label Titik Akhir LAS123 (2049)
+  # Label Titik Akhir LAS123 
   annotate("label", x = th_akhir - 3.2, y = val_las_akhir_inc + offset_y_inc + (y_range_inc * 0.02), 
            label = lbl_las_akhir_inc, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
 
-  # Label Titik Akhir BAU (2049)
+  # Label Titik Akhir BAU 
   annotate("label", x = th_akhir - 3.0, y = val_bau_akhir_inc - offset_y_inc - (y_range_inc * 0.02), 
            label = lbl_bau_akhir_inc, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
 
@@ -1594,12 +1626,12 @@ p_income_kapita <- ggplot(df_long_kapita, aes(x = Year, y = Income_Kapita, color
       "IMLaS-3"  = "#8E44AD"   # Ungu
     )
   ) +
-  scale_x_continuous(breaks = seq(2025, 2049, by = 5), limits = c(2023.5, 2050.5)) +
+  scale_x_continuous(breaks = seq(thDasar, thAkhir, by = 5), limits = c(2023.5, 2050.5)) +
   scale_y_continuous(labels = number_format(accuracy = 0.01), limits = c(y_min_inc * 0.95, y_max_inc * 1.12)) +
 
   # --- Judul dan Sumbu ---
   labs(
-    title = "Proyeksi Pendapatan per Kapita 2024–2049",
+    title = "Proyeksi Pendapatan per Kapita 2024–2045",
     x = "Tahun",
     y = "Juta rupiah / kapita"
   ) +
@@ -1634,12 +1666,12 @@ persen_kenaikan_2045 <- ((income_las123_2045 - income_bau_2045) / income_bau_204
 
 df_perbandingan_income <- data.frame(
   Indikator = c(
-    "Income per Kapita BAU 2049",
-    "Income per Kapita IMLaS-3 (LAS1+2+3) 2049",
+    "Income per Kapita BAU 2045",
+    "Income per Kapita IMLaS-3 (LAS1+2+3) 2045",
     "Selisih Tambahan Income (Juta Rp)",
     "Persentase Kenaikan dibanding BAU (%)",
-    "Rerata Laju Pertumbuhan BAU (2024–2049)",
-    "Rerata Laju Pertumbuhan IMLaS-3 (2024–2049)"
+    "Rerata Laju Pertumbuhan BAU (2024–2045)",
+    "Rerata Laju Pertumbuhan IMLaS-3 (2024–2045)"
   ),
   Nilai = c(
     sprintf("Rp %.2f Juta", income_bau_2045),
@@ -1655,7 +1687,7 @@ df_perbandingan_income <- data.frame(
 knitr::kable(
   df_perbandingan_income,
   row.names = FALSE,
-  caption = "Perbandingan Income Masyarakat PADAGIMO (BAU vs. LAS1+2+3) Tahun 2049",
+  caption = "Perbandingan Income Masyarakat PADAGIMO (BAU vs. LAS1+2+3) Tahun 2045",
   col.names = c("Parameter Indikator", "Nilai Simulasi"),
   align = c("l", "r")
 ) %>%
@@ -1674,145 +1706,195 @@ knitr::kable(
 
 Proyeksi pendapatan per kapita masyarakat pesisir dihitung dengan membagi proyeksi pendapatan masyarakat pesisir PADAGIMO dengan proyeksi populasi masyarakat pesisir. Kedua proyeksi tersebut diestimasi berdasarkan proporsi luas wilayah pesisir terhadap total wilayah PADAGIMO, yang dikaitkan dengan proyeksi pendapatan masyarakat dan populasi PADAGIMO secara keseluruhan. Pendekatan ini digunakan untuk menggambarkan sejauh mana dampak intervensi terhadap perekonomian regional tercermin pada tingkat kesejahteraan masyarakat pesisir.
 
-Tanpa adanya intervensi pengelolaan berbasis lahan dan pasar yang inklusif, pendapatan per kapita masyarakat pesisir diproyeksikan tumbuh secara alamiah hingga mencapai Rp <span style="background-color: #ff0000; bold;">44,4</span> juta pada tahun 2049. Pelaksanaan skenario intervensi secara konsisten menunjukkan deviasi positif di atas kurva BAU. Skenario IMLaS-1 serta IMLaS-2 secara bertahap menaikkan taraf pendapatan kawasan pesisir.
+Tanpa adanya intervensi pengelolaan berbasis lahan dan pasar yang inklusif, pendapatan per kapita masyarakat pesisir diproyeksikan tumbuh secara alamiah hingga mencapai Rp <span style="background-color: #ff0000; bold;">44,4</span> juta pada tahun 2045. Pelaksanaan skenario intervensi secara konsisten menunjukkan deviasi positif di atas kurva BAU. Skenario IMLaS-1 serta IMLaS-2 secara bertahap menaikkan taraf pendapatan kawasan pesisir.
 
-Puncak potensi dicapai pada Skenario IMLaS-3 yang merupakan kombinasi optimal tata guna lahan, produktivitas, dan hilirisasi rantai nilai berbasis lahan/pesisir), di mana pendapatan per kapita masyarakat pesisir diproyeksikan meningkat hingga Rp <span style="background-color: #ff0000; bold;">46,7</span> juta pada tahun 2049. Penerapan skenario penuh IMLaS-3 menghasilkan tambahan pendapatan bagi masyarakat pesisir sebesar Rp <span style="background-color: #ff0000; bold;">2,3</span> juta lebih tinggi dibandingkan skenario BaU pada tahun 2045. Angka ini mencerminkan peningkatan sebesar <span style="background-color: #ff0000; bold;">5,18%</span> pada pendapatan per kapita masyarakat pesisir jika dibandingkan dengan kondisi tanpa intervensi.
+Puncak potensi dicapai pada Skenario IMLaS-3 yang merupakan kombinasi optimal tata guna lahan, produktivitas, dan hilirisasi rantai nilai berbasis lahan/pesisir), di mana pendapatan per kapita masyarakat pesisir diproyeksikan meningkat hingga Rp <span style="background-color: #ff0000; bold;">46,7</span> juta pada tahun 2045. Penerapan skenario penuh IMLaS-3 menghasilkan tambahan pendapatan bagi masyarakat pesisir sebesar Rp <span style="background-color: #ff0000; bold;">2,3</span> juta lebih tinggi dibandingkan skenario BaU pada tahun 2045. Angka ini mencerminkan peningkatan sebesar <span style="background-color: #ff0000; bold;">5,18%</span> pada pendapatan per kapita masyarakat pesisir jika dibandingkan dengan kondisi tanpa intervensi.
 
-```{r, echo = FALSE, warning=FALSE}
-# propLuasPesisir <- propLuasPesisir
-# final_income_pesisir <- final_income
-# final_income_pesisir[, -1] <- final_income_pesisir[, -1] * propLuasPesisir
-# 
-# df_populasi_pesisir <- populasiPendudukPesisir # Variabel dipisah agar tidak tertimpa
-# 
-# df_income_pesisir <- final_income_pesisir %>%
-#   left_join(df_populasi_pesisir, by = "Year") %>%
-#   mutate(
-#     incomekapita_BAU    = (income_BAU / Populasi),
-#     incomekapita_LAS1   = (income_LAS1 / Populasi) ,
-#     incomekapita_LAS1B  = (income_LAS1B / Populasi),
-#     incomekapita_LAS12  = (income_LAS12 / Populasi) ,
-#     incomekapita_LAS123 = (income_LAS123 / Populasi) 
-#   )
-# 
+```{r, income-pesisir, echo = FALSE, warning=FALSE}
+# ==============================================================================
+# PROYEKSI PENDAPATAN PER KAPITA MASYARAKAT PESISIR (PADAGIMO)
+# ==============================================================================
+
+# 1. Hitung Pendapatan Pesisir Total
+propLuasPesisir <- propLuasPesisir
+final_income_pesisir <- final_income
+final_income_pesisir[, -1] <- final_income_pesisir[, -1] * propLuasPesisir
+
+# 2. Gabungkan dengan Data Populasi Pesisir (Juta Rp / Jiwa)
+df_populasi_pesisir <- populasiPendudukPesisir 
+
+df_income_pesisir <- final_income_pesisir %>%
+  left_join(df_populasi_pesisir, by = "Year") %>%
+  mutate(
+    incomekapita_BAU    = income_BAU / Populasi,
+    incomekapita_LAS1   = income_LAS1 / Populasi,
+    incomekapita_LAS1B  = income_LAS1B / Populasi,
+    incomekapita_LAS12  = income_LAS12 / Populasi,
+    incomekapita_LAS123 = income_LAS123 / Populasi
+  )
+
+# Export File Excel
 # write_xlsx(df_income_pesisir, "Final_Income_pesisir_SOLUSI_PADAGIMO.xlsx")
-# 
-# # 2. Cetak Tabel HTML Pesisir
-# df_income_pesisir %>%
-#   select(Year, incomekapita_BAU, incomekapita_LAS1, incomekapita_LAS1B, incomekapita_LAS12, incomekapita_LAS123) %>%
-#   mutate(Year = as.character(Year)) %>%
-#   knitr::kable(
-#     row.names = FALSE,
-#     caption = "Pendapatan Masyarakat Pesisir per Kapita (Juta Rupiah)",
-#     digits = 2,
-#     format.args = list(big.mark = ","),
-#     col.names = c("Year", "BAU", "LAS 1", "LAS 1B", "LAS 12", "LAS 123"),
-#     align = c("c", "r", "r", "r", "r", "r")
-#   ) %>%
-#   kable_styling(
-#     bootstrap_options = c("striped", "hover", "condensed"),
-#     full_width = TRUE,
-#     position = "center"
-#   ) %>%
-#   row_spec(0, bold = TRUE, extra_css = "border-top: 2px solid #ccc; border-bottom: 2px solid #ccc;")
-# 
-# # 3. PERBAIKAN: Reshape Data Pesisir ke Format Long
-# df_pesisir_kapita <- df_income_pesisir %>%
-#   select(Year, starts_with("incomekapita_")) %>%
-#   pivot_longer(
-#     cols = starts_with("incomekapita_"),
-#     names_to = "Skenario",
-#     values_to = "Income_Kapita"
-#   ) %>%
-#   mutate(
-#     Skenario_Label = case_when(
-#       Skenario == "incomekapita_BAU"    ~ "BAU",
-#       Skenario == "incomekapita_LAS1B"  ~ "IMLaS-1B",
-#       Skenario == "incomekapita_LAS12"  ~ "IMLaS-2",
-#       Skenario == "incomekapita_LAS123" ~ "IMLaS-3"
-#     ),
-#     Skenario_Label = factor(Skenario_Label, levels = c("BAU", "IMLaS-1B", "IMLaS-2", "IMLaS-3"))
-#   ) %>%
-#   filter(!is.na(Skenario_Label))
-# 
-# # 4. Ekstraksi Nilai & Grafik Pesisir
-# val_2025_pes     <- df_income_pesisir$incomekapita_BAU[df_income_pesisir$Year == 2025]
-# val_bau_2045_pes <- df_income_pesisir$incomekapita_BAU[df_income_pesisir$Year == 2045]
-# val_las_2045_pes <- df_income_pesisir$incomekapita_LAS123[df_income_pesisir$Year == 2045]
-# 
-# lbl_2025_pes     <- number(val_2025_pes, accuracy = 0.01)
-# lbl_bau_2045_pes <- number(val_bau_2045_pes, accuracy = 0.01)
-# lbl_las_2045_pes <- number(val_las_2045_pes, accuracy = 0.01)
-# 
-# # PERBAIKAN: Gunakan df_pesisir_kapita pada ggplot()
-# p_income_kapita_pesisir <- ggplot(df_pesisir_kapita, aes(x = Year, y = Income_Kapita, color = Skenario_Label, group = Skenario_Label)) +
-#   geom_line(linewidth = 1.1) +
-#   geom_point(size = 2.5) +
-#   annotate("segment", x = 2025.2, xend = 2026.8, y = val_2025_pes, yend = val_2025_pes + 2.5, color = "gray40", linewidth = 0.6) +
-#   annotate("segment", x = 2044.8, xend = 2042.8, y = val_las_2045_pes, yend = val_las_2045_pes + 2.2, color = "gray40", linewidth = 0.6) +
-#   annotate("segment", x = 2044.8, xend = 2043.2, y = val_bau_2045_pes, yend = val_bau_2045_pes - 2.5, color = "gray40", linewidth = 0.6) +
-#   annotate("label", x = 2027.2, y = val_2025_pes + 2.7, label = lbl_2025_pes, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4.2, label.padding = unit(0.4, "lines")) +
-#   annotate("label", x = 2042.0, y = val_las_2045_pes + 2.4, label = lbl_las_2045_pes, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4.2, label.padding = unit(0.4, "lines")) +
-#   annotate("label", x = 2042.5, y = val_bau_2045_pes - 2.7, label = lbl_bau_2045_pes, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4.2, label.padding = unit(0.4, "lines")) +
-#   scale_color_manual(name = NULL, values = c("BAU" = "#4178BE", "IMLaS-1B" = "#C0392B", "IMLaS-2" = "#7DCE13", "IMLaS-3" = "#8E44AD")) +
-#   scale_x_continuous(breaks = seq(2025, 2045, by = 5), limits = c(2024.5, 2045.5)) +
-#   scale_y_continuous(labels = number_format(accuracy = 0.01), limits = c(18, 45)) +
-#   labs(title = "Proyeksi Pendapatan per Kapita Masyarakat Pesisir 2026–2045", x = NULL, y = "Juta rupiah") +
-#   theme_minimal(base_size = 13) +
-#   theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 15, color = "gray20"), axis.title.y = element_text(color = "gray30", size = 12), axis.text = element_text(color = "gray20"), legend.position = "bottom", panel.grid.minor = element_blank(), panel.grid.major.x = element_blank())
-# 
-# print(p_income_kapita_pesisir)
-# 
-# # 5. Tabel Perbandingan Pesisir 2045
-# n_tahun <- 20
-# cagr_bau_pes    <- ((val_bau_2045_pes / val_2025_pes)^(1 / n_tahun) - 1) * 100
-# cagr_las123_pes <- ((val_las_2045_pes / val_2025_pes)^(1 / n_tahun) - 1) * 100
-# persen_kenaikan_pesisir_2045 <- ((val_las_2045_pes - val_bau_2045_pes) / val_bau_2045_pes) * 100
-# 
-# df_perbandingan_pesisir <- data.frame(
-#   Indikator = c(
-#     "Income per Kapita Pesisir BAU 2045",
-#     "Income per Kapita Pesisir IMLaS-3 (LAS1+2+3) 2045",
-#     "Selisih Tambahan Income Pesisir (Juta Rp)",
-#     "Persentase Kenaikan dibanding BAU (%)",
-#     "Rerata Laju Pertumbuhan BAU Pesisir (2025–2045)",
-#     "Rerata Laju Pertumbuhan IMLaS-3 Pesisir (2025–2045)"
-#   ),
-#   Nilai = c(
-#     sprintf("Rp %.2f Juta", val_bau_2045_pes),
-#     sprintf("Rp %.2f Juta", val_las_2045_pes),
-#     sprintf("Rp %.2f Juta", val_las_2045_pes - val_bau_2045_pes),
-#     sprintf("+%.2f%%", persen_kenaikan_pesisir_2045),
-#     sprintf("%.2f%%", cagr_bau_pes),
-#     sprintf("%.2f%%", cagr_las123_pes)
-#   )
-# )
-# 
-# knitr::kable(
-#   df_perbandingan_pesisir,
-#   row.names = FALSE,
-#   caption = "Perbandingan Income Masyarakat Pesisir (BAU vs. IMLaS-3) Tahun 2045",
-#   col.names = c("Parameter Indikator Pesisir", "Nilai Simulasi"),
-#   align = c("l", "r")
-# ) %>%
-#   kableExtra::kable_styling(
-#     bootstrap_options = c("striped", "hover", "condensed"),
-#     full_width = FALSE,
-#     position = "center"
-#   ) %>%
-#   kableExtra::row_spec(0, bold = TRUE, extra_css = "border-top: 2px solid #ccc; border-bottom: 2px solid #ccc;") %>%
-#   kableExtra::row_spec(4, bold = TRUE, background = "#EAEAEA") # Highlight khusus baris ke-6 (Persentase Kenaikan)
+
+# 3. Reshape Data Pesisir ke Format Long
+df_pesisir_kapita <- df_income_pesisir %>%
+  select(Year, starts_with("incomekapita_")) %>%
+  pivot_longer(
+    cols = starts_with("incomekapita_"),
+    names_to = "Skenario",
+    values_to = "Income_Kapita"
+  ) %>%
+  mutate(
+    Skenario_Label = case_when(
+      Skenario == "incomekapita_BAU"    ~ "BAU",
+      Skenario == "incomekapita_LAS1B"  ~ "IMLaS-1B",
+      Skenario == "incomekapita_LAS12"  ~ "IMLaS-2",
+      Skenario == "incomekapita_LAS123" ~ "IMLaS-3"
+    ),
+    Skenario_Label = factor(Skenario_Label, levels = c("BAU", "IMLaS-1B", "IMLaS-2", "IMLaS-3"))
+  ) %>%
+  filter(!is.na(Skenario_Label))
+
+# 4. Penentuan Titik Awal & Akhir Dinamis Presisi
+th_awal  <- min(df_pesisir_kapita$Year, na.rm = TRUE) # Otomatis 2024
+th_akhir <- max(df_pesisir_kapita$Year, na.rm = TRUE) # Otomatis thAkhir
+
+# Ambil Nilai Tepat di Titik Awal (2024) & Akhir (2045)
+val_awal_pes     <- df_pesisir_kapita$Income_Kapita[df_pesisir_kapita$Year == th_awal & df_pesisir_kapita$Skenario_Label == "BAU"][1]
+val_bau_akhir_pes <- df_pesisir_kapita$Income_Kapita[df_pesisir_kapita$Year == th_akhir & df_pesisir_kapita$Skenario_Label == "BAU"][1]
+val_las_akhir_pes <- df_pesisir_kapita$Income_Kapita[df_pesisir_kapita$Year == th_akhir & df_pesisir_kapita$Skenario_Label == "IMLaS-3"][1]
+
+# Format Angka 2 Desimal
+lbl_awal_pes     <- number(val_awal_pes, accuracy = 0.01)
+lbl_bau_akhir_pes <- number(val_bau_akhir_pes, accuracy = 0.01)
+lbl_las_akhir_pes <- number(val_las_akhir_pes, accuracy = 0.01)
+
+# Hitung Rentang Skala Y Otomatis untuk Offset Proporsional
+y_min_pes <- min(df_pesisir_kapita$Income_Kapita, na.rm = TRUE)
+y_max_pes <- max(df_pesisir_kapita$Income_Kapita, na.rm = TRUE)
+y_range_pes <- y_max_pes - y_min_pes
+
+offset_y_pes <- y_range_pes * 0.08  # Offset 8% proporsional
+
+# 5. Plot Grafik Presisi Pesisir (Visualisasi Tepat Titik)
+p_income_kapita_pesisir <- ggplot(df_pesisir_kapita, aes(x = Year, y = Income_Kapita, color = Skenario_Label, group = Skenario_Label)) +
+  # --- Garis & Titik Data ---
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 2.5) +
+
+  # --- Garis Penunjuk / Callout Pointer Lines (Presisi pada th_awal dan th_akhir) ---
+  # Garis penunjuk nilai awal 2024 (Kiri)
+  annotate("segment", x = th_awal + 0.2, xend = th_awal + 2.0, 
+           y = val_awal_pes, yend = val_awal_pes + offset_y_pes,
+           color = "gray40", linewidth = 0.6) +
+
+  # Garis penunjuk nilai akhir LAS123  (Kanan Atas)
+  annotate("segment", x = th_akhir - 0.2, xend = th_akhir - 2.5, 
+           y = val_las_akhir_pes, yend = val_las_akhir_pes + offset_y_pes,
+           color = "gray40", linewidth = 0.6) +
+
+  # Garis penunjuk nilai akhir BAU  (Kanan Bawah)
+  annotate("segment", x = th_akhir - 0.2, xend = th_akhir - 2.2, 
+           y = val_bau_akhir_pes, yend = val_bau_akhir_pes - offset_y_pes,
+           color = "gray40", linewidth = 0.6) +
+
+  # --- Kotak Label Nilai ---
+  # Label Titik Awal (2024)
+  annotate("label", x = th_awal + 2.2, y = val_awal_pes + offset_y_pes + (y_range_pes * 0.02), 
+           label = lbl_awal_pes, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
+
+  # Label Titik Akhir LAS123 
+  annotate("label", x = th_akhir - 3.2, y = val_las_akhir_pes + offset_y_pes + (y_range_pes * 0.02), 
+           label = lbl_las_akhir_pes, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
+
+  # Label Titik Akhir BAU 
+  annotate("label", x = th_akhir - 3.0, y = val_bau_akhir_pes - offset_y_pes - (y_range_pes * 0.02), 
+           label = lbl_bau_akhir_pes, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
+
+  # --- Skala Warna Legenda & Sumbu ---
+  scale_color_manual(
+    name = NULL,
+    values = c(
+      "BAU"      = "#4178BE",  # Biru
+      "IMLaS-1B" = "#C0392B",  # Merah
+      "IMLaS-2"  = "#7DCE13",  # Hijau
+      "IMLaS-3"  = "#8E44AD"   # Ungu
+    )
+  ) +
+  scale_x_continuous(breaks = seq(thDasar, thAkhir, by = 5), limits = c(2023.5, 2050.5)) +
+  scale_y_continuous(labels = number_format(accuracy = 0.01), limits = c(y_min_pes * 0.95, y_max_pes * 1.12)) +
+
+  # --- Judul dan Sumbu ---
+  labs(
+    title = "Proyeksi Pendapatan per Kapita Masyarakat Pesisir\n2024–2045",
+    x = "Tahun",
+    y = "Juta rupiah / kapita"
+  ) +
+
+  # --- Tema Tampilan ---
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 15, color = "gray20"),
+    axis.title.y = element_text(color = "gray30", size = 12),
+    axis.text = element_text(color = "gray20"),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  )
+
+# Tampilkan Grafik
+print(p_income_kapita_pesisir)
+
+# 6. Tabel Perbandingan Pesisir 2045 (HTML R Markdown)
+n_tahun <- nThSimulasi
+cagr_bau_pes    <- ((val_bau_akhir_pes / val_awal_pes)^(1 / n_tahun) - 1) * 100
+cagr_las123_pes <- ((val_las_akhir_pes / val_awal_pes)^(1 / n_tahun) - 1) * 100
+persen_kenaikan_pesisir_2049 <- ((val_las_akhir_pes - val_bau_akhir_pes) / val_bau_akhir_pes) * 100
+
+df_perbandingan_pesisir <- data.frame(
+  Indikator = c(
+    "Income per Kapita Pesisir BAU 2045",
+    "Income per Kapita Pesisir IMLaS-3 (LAS1+2+3) 2045",
+    "Selisih Tambahan Income Pesisir (Juta Rp)",
+    "Persentase Kenaikan dibanding BAU (%)",
+    "Rerata Laju Pertumbuhan BAU Pesisir (2024–2045)",
+    "Rerata Laju Pertumbuhan IMLaS-3 Pesisir (2024–2045)"
+  ),
+  Nilai = c(
+    sprintf("Rp %.2f Juta", val_bau_akhir_pes),
+    sprintf("Rp %.2f Juta", val_las_akhir_pes),
+    sprintf("Rp %.2f Juta", val_las_akhir_pes - val_bau_akhir_pes),
+    sprintf("+%.2f%%", persen_kenaikan_pesisir_2049),
+    sprintf("%.2f%% per tahun", cagr_bau_pes),
+    sprintf("%.2f%% per tahun", cagr_las123_pes)
+  )
+)
+
+knitr::kable(
+  df_perbandingan_pesisir,
+  row.names = FALSE,
+  caption = "Perbandingan Income Masyarakat Pesisir (BAU vs. IMLaS-3) Tahun 2045",
+  col.names = c("Parameter Indikator Pesisir", "Nilai Simulasi"),
+  align = c("l", "r")
+) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE,
+    position = "center"
+  ) %>%
+  kableExtra::row_spec(0, bold = TRUE, extra_css = "border-top: 2px solid #ccc; border-bottom: 2px solid #ccc;") %>%
+  kableExtra::row_spec(4, bold = TRUE, background = "#EAEAEA")
 ```
 
 ## Total Keuntungan Usaha
 
 Proyeksi total keuntungan usaha regional dihitung berdasarkan proporsi Surplus Usaha Bruto (Gross Operating Surplus) terhadap total PDRB, yang kemudian diselaraskan dengan proyeksi PDRB. Indikator ini mencerminkan porsi nilai tambah ekonomi yang diperoleh para pelaku usaha dan pemilik modal atas investasi serta aktivitas bisnis di wilayah PADAGIMO.
 
-Tanpa adanya intervensi kebijakan perekonomian regional, keuntungan usaha diproyeksikan tumbuh secara alamiah hingga mencapai Rp <span style="background-color: #ff0000; bold;">291,38</span> triliun pada tahun 2049. Sedangkan dengan adanya penerapan skenario IMLAS menghasilkan capaian tertinggi nilai proyeksi keuntungan usaha mencapai Rp306,63</span> triliun pada akhir periode simulasi tahun 2049. Menerapkan skenario IMLaS-3 berpotensi memberikan tambahan keuntungan usaha sebesar Rp <span style="background-color: #ff0000; bold;">15,25</span> triliun lebih tinggi dibandingkan skenario BAU pada tahun 2049.
+Tanpa adanya intervensi kebijakan perekonomian regional, keuntungan usaha diproyeksikan tumbuh secara alamiah hingga mencapai Rp <span style="background-color: #ff0000; bold;">291,38</span> triliun pada tahun 2045. Sedangkan dengan adanya penerapan skenario IMLAS menghasilkan capaian tertinggi nilai proyeksi keuntungan usaha mencapai Rp306,63</span> triliun pada akhir periode simulasi tahun 2045. Menerapkan skenario IMLaS-3 berpotensi memberikan tambahan keuntungan usaha sebesar Rp <span style="background-color: #ff0000; bold;">15,25</span> triliun lebih tinggi dibandingkan skenario BAU pada tahun 2045.
 
-Pendapatan keuntungan usaha menggambarkan manfaat ekonomi yang diterima oleh pelaku usaha sebagai hasil dari perkembangan aktivitas ekonomi di suatu wilayah. Grafik di bawah menunjukkan bahwa di akhir periode tahun 2049, potensi keuntungan usaha regional dapat ditingkatkan menjadi <span style="background-color: #ff0000; bold;">5,2%</span> lebih besar dengan menerapkan skenario IMLaS-3 dibanding skenario BaU. Melalui penerapan intervensi IMLaS-3, keuntungan usaha regional di PADAGIMO secara rata-rata diproyeksikan <span style="background-color: #ff0000; bold;">4,5%</span> lebih tinggi dibandingkan jika wilayah berjalan dengan skenario BAU.
+Pendapatan keuntungan usaha menggambarkan manfaat ekonomi yang diterima oleh pelaku usaha sebagai hasil dari perkembangan aktivitas ekonomi di suatu wilayah. Grafik di bawah menunjukkan bahwa di akhir periode tahun 2045, potensi keuntungan usaha regional dapat ditingkatkan menjadi <span style="background-color: #ff0000; bold;">5,2%</span> lebih besar dengan menerapkan skenario IMLaS-3 dibanding skenario BaU. Melalui penerapan intervensi IMLaS-3, keuntungan usaha regional di PADAGIMO secara rata-rata diproyeksikan <span style="background-color: #ff0000; bold;">4,5%</span> lebih tinggi dibandingkan jika wilayah berjalan dengan skenario BAU.
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, untung, echo = FALSE, warning=FALSE}
 # proporsi surplus usaha bruto
 surplus <- as.numeric(io[baris_surplus, kolom_Sektor])
 surplus[is.na(surplus)] <- 0
@@ -1917,12 +1999,12 @@ p_keuntungan_usaha <- ggplot(df_long, aes(x = Year, y = Surplus, color = Skenari
       "surplus_LAS123" = "IMLaS-3"
     )
   ) +
-  scale_x_continuous(breaks = seq(2025, 2049, by = 5), limits = c(2023.5, 2050)) +
+  scale_x_continuous(breaks = seq(thDasar, thAkhir, by = 5), limits = c(2023.5, 2050)) +
   scale_y_continuous(labels = comma_format(), limits = c(y_min_data * 0.95, y_max_data * 1.12)) +
 
   # --- Judul dan Sumbu ---
   labs(
-    title = "Proyeksi Keuntungan Usaha Regional\n2024–2049",
+    title = "Proyeksi Keuntungan Usaha Regional\n2024–2045",
     x = "Tahun",
     y = "Total Keuntungan Usaha (Juta Rupiah)"
   ) +
@@ -1950,12 +2032,12 @@ persen_kenaikan_surplus_2045 <- ((val_las_2045 - val_bau_2045) / val_bau_2045) *
 # Susun Data Frame Ringkasan 4 Baris
 df_perbandingan_surplus <- data.frame(
   Indikator = c(
-    "Total Keuntungan Usaha BAU 2049",
-    "Total Keuntungan Usaha IMLaS-3 (LAS1+2+3) 2049",
+    "Total Keuntungan Usaha BAU 2045",
+    "Total Keuntungan Usaha IMLaS-3 (LAS1+2+3) 2045",
     "Selisih Tambahan Keuntungan Usaha (Juta Rp)",
     "Persentase Kenaikan dibanding BAU (%)",
-    "Rerata Laju Pertumbuhan BAU (2024–2049)",
-    "Rerata Laju Pertumbuhan IMLaS-3 (2024–2049)"
+    "Rerata Laju Pertumbuhan BAU (2024–2045)",
+    "Rerata Laju Pertumbuhan IMLaS-3 (2024–2045)"
   ),
   Nilai = c(
     sprintf("Rp %s Juta", comma(val_bau_2045)),
@@ -1971,7 +2053,7 @@ df_perbandingan_surplus <- data.frame(
 knitr::kable(
   df_perbandingan_surplus,
   row.names = FALSE,
-  caption = "Perbandingan Keuntungan Usaha Regional (BAU vs. IMLaS-3) Tahun 2049",
+  caption = "Perbandingan Keuntungan Usaha Regional (BAU vs. IMLaS-3) Tahun 2045",
   col.names = c("Parameter Indikator Keuntungan Usaha", "Nilai Simulasi"),
   align = c("l", "r")
 ) %>%
@@ -1986,9 +2068,9 @@ knitr::kable(
 
 ## Serapan Tenaga Kerja
 
-Proyeksi serapan tenaga kerja mengasumsikan penambahan serapan tenaga kerja baru tahunan sebagai hasil akumulasi selisih pertumbuhan PDRB yang diselaraskan dengan nilai Labor Multiplier. Intervensi melalui skenario IMLaS diharapkan mampu menyerap lebih banyak tenaga kerja. Hasil proyeksi menunjukkan bahwa Intervensi skenario IMLaS-3 di akhir tahun 2049 diproyeksikan mampu meningkatkan serapan tenaga kerja sebesar <span style="background-color: #ff0000; bold;">6.016.163</span> orang. Angka tersebut <span style="background-color: #ff0000; bold;">5,2%</span> lebih besar bila dibandingkan dengan hasil simulasi penerapan skenario BaU (Bussiness as Usual) yakni <span style="background-color: #ff0000; bold;">5.719.673</span> orang.
+Proyeksi serapan tenaga kerja mengasumsikan penambahan serapan tenaga kerja baru tahunan sebagai hasil akumulasi selisih pertumbuhan PDRB yang diselaraskan dengan nilai Labor Multiplier. Intervensi melalui skenario IMLaS diharapkan mampu menyerap lebih banyak tenaga kerja. Hasil proyeksi menunjukkan bahwa Intervensi skenario IMLaS-3 di akhir tahun 2045 diproyeksikan mampu meningkatkan serapan tenaga kerja sebesar <span style="background-color: #ff0000; bold;">6.016.163</span> orang. Angka tersebut <span style="background-color: #ff0000; bold;">5,2%</span> lebih besar bila dibandingkan dengan hasil simulasi penerapan skenario BaU (Bussiness as Usual) yakni <span style="background-color: #ff0000; bold;">5.719.673</span> orang.
 
-```{r, echo = FALSE, warning=FALSE}
+```{r, serapan_tk, echo = FALSE, warning=FALSE}
 # KONSTANTA TK
 meanLabMultiplier <- mean(tabel_multiplier_sektoral$Labour_Effect)
 
@@ -2055,7 +2137,7 @@ df_long_tk <- final_tk %>%
 th_awal  <- min(df_long_tk$Year, na.rm = TRUE)
 th_akhir <- max(df_long_tk$Year, na.rm = TRUE)
 
-# Nilai Numerik Tepat di Titik Awal (2024) & Akhir (2049)
+# Nilai Numerik Tepat di Titik Awal (2024) & Akhir (2045)
 val_awal_tk     <- df_long_tk$TK[df_long_tk$Year == th_awal & df_long_tk$Skenario == "TK_BAU"][1]
 val_bau_akhir_tk <- df_long_tk$TK[df_long_tk$Year == th_akhir & df_long_tk$Skenario == "TK_BAU"][1]
 val_las_akhir_tk <- df_long_tk$TK[df_long_tk$Year == th_akhir & df_long_tk$Skenario == "TK_LAS123"][1]
@@ -2099,11 +2181,11 @@ p_serapan_tk <- ggplot(df_long_tk, aes(x = Year, y = TK, color = Skenario, group
   annotate("label", x = th_awal + 2.2, y = val_awal_tk + offset_y_tk + (y_range_tk * 0.02), 
            label = lbl_awal_tk, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
 
-  # Label Titik Akhir LAS123 (2049)
+  # Label Titik Akhir LAS123 
   annotate("label", x = th_akhir - 3.2, y = val_las_akhir_tk + offset_y_tk + (y_range_tk * 0.02), 
            label = lbl_las_akhir_tk, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
 
-  # Label Titik Akhir BAU (2049)
+  # Label Titik Akhir BAU 
   annotate("label", x = th_akhir - 3.0, y = val_bau_akhir_tk - offset_y_tk - (y_range_tk * 0.02), 
            label = lbl_bau_akhir_tk, fontface = "bold", fill = "#EAEAEA", color = "black", size = 4, label.padding = unit(0.4, "lines")) +
 
@@ -2125,12 +2207,12 @@ p_serapan_tk <- ggplot(df_long_tk, aes(x = Year, y = TK, color = Skenario, group
       "TK_LAS123" = "IMLaS-3"
     )
   ) +
-  scale_x_continuous(breaks = seq(2025, 2049, by = 5), limits = c(2023.5, 2050)) +
+  scale_x_continuous(breaks = seq(thDasar, thAkhir, by = 5), limits = c(2023.5, 2050)) +
   scale_y_continuous(labels = comma_format(), limits = c(y_min_tk * 0.95, y_max_tk * 1.12)) +
 
   # --- Judul dan Sumbu ---
   labs(
-    title = "Proyeksi Serapan Tenaga Kerja\n2024–2049",
+    title = "Proyeksi Serapan Tenaga Kerja\n2024–2045",
     x = "Tahun",
     y = "Serapan Tenaga Kerja (Orang)"
   ) +
@@ -2158,12 +2240,12 @@ persen_kenaikan_tk_2045 <- ((val_las_2045 - val_bau_2045) / val_bau_2045) * 100
 # Susun Data Frame Ringkasan 4 Baris
 df_perbandingan_tk <- data.frame(
   Indikator = c(
-    "Serapan Tenaga Kerja BAU 2049",
-    "Serapan Tenaga Kerja IMLaS-3 (LAS1+2+3) 2049",
+    "Serapan Tenaga Kerja BAU 2045",
+    "Serapan Tenaga Kerja IMLaS-3 (LAS1+2+3) 2045",
     "Selisih Tambahan Serapan TK (Orang)",
     "Persentase Kenaikan dibanding BAU (%)",
-    "Rerata Laju Pertumbuhan BAU per tahun (2024–2049)",
-    "Rerata Laju Pertumbuhan IMLaS-3 per tahun (2024–2049)"
+    "Rerata Laju Pertumbuhan BAU per tahun (2024–2045)",
+    "Rerata Laju Pertumbuhan IMLaS-3 per tahun (2024–2045)"
   ),
   Nilai = c(
     sprintf("%s Orang", comma(round(val_bau_2045, 0))),
@@ -2179,7 +2261,7 @@ df_perbandingan_tk <- data.frame(
 knitr::kable(
   df_perbandingan_tk,
   row.names = FALSE,
-  caption = "Perbandingan Serapan Tenaga Kerja Regional (BAU vs. IMLaS-3) Tahun 2049",
+  caption = "Perbandingan Serapan Tenaga Kerja Regional (BAU vs. IMLaS-3) Tahun 2045",
   col.names = c("Parameter Indikator Tenaga Kerja", "Nilai Simulasi"),
   align = c("l", "r")
 ) %>%
@@ -2198,74 +2280,48 @@ knitr::kable(
 
 Indeks Total Forward Linkage (ITFL) atau Indeks Derajat Kepekaan mengukur sejauh mana sektor berbasis lahan berfungsi sebagai penyedia input (supplier) bagi pertumbuhan sektor-sektor perekonomian lainnya. Semakin tinggi nilai ITFL, semakin kuat dorongan yang diberikan oleh sektor lahan terhadap rantai pasok hilir (forward linkage) dan sektor olahan di dalam struktur ekonomi regional.
 
-Pada kondisi BAU, rerata nilai ITFL sektor lahan berada pada tingkat yang sangat datar dan stagnan di kisaran <span style="background-color: #ff0000; bold;">0,18</span> sepanjang periode 2024 hingga 2049. Hal ini mengindikasikan bahwa tanpa adanya intervensi struktur perekonomian, keterkaitan sektor lahan terhadap sektor hilir tidak mengalami penguatan dan cenderung bertindak sekadar sebagai penyedia bahan baku mentah tanpa integrasi rantai nilai yang memadai. <span style="background-color: #ff0000; bold;">Penerapan skenario IMLAS-3 memperlihatkan peningkatan rerata ITFL yang signifikan dan konsisten membentuk pola naik. Dimulai dari titik awal yang sama pada tahun 2024–2027 (0,18), nilai ITFL meningkat secara bertahap menembus 0,185 pada kisaran tahun 2030, melampaui 0,19 pada periode 2040–2041, hingga mencapai puncaknya mendekati 0,20 pada tahun 2049.</span>
+Pada kondisi BAU, rerata nilai ITFL sektor lahan berada pada tingkat yang sangat datar dan stagnan di kisaran <span style="background-color: #ff0000; bold;">0,18</span> sepanjang periode 2024 hingga 2045. Hal ini mengindikasikan bahwa tanpa adanya intervensi struktur perekonomian, keterkaitan sektor lahan terhadap sektor hilir tidak mengalami penguatan dan cenderung bertindak sekadar sebagai penyedia bahan baku mentah tanpa integrasi rantai nilai yang memadai. <span style="background-color: #ff0000; bold;">Penerapan skenario IMLAS-3 memperlihatkan peningkatan rerata ITFL yang signifikan dan konsisten membentuk pola naik. Dimulai dari titik awal yang sama pada tahun 2024–2027 (0,18), nilai ITFL meningkat secara bertahap menembus 0,185 pada kisaran tahun 2030, melampaui 0,19 pada periode 2040–2041, hingga mencapai puncaknya mendekati 0,20 pada tahun 2045.</span>
 
 Kenaikan bertahap pada kurva simulasi LAS membuktikan bahwa intervensi kebijakan (penguatan akses lahan, peningkatan produktivitas, serta optimalisasi rantai nilai dan hilirisasi) berhasil mengubah peran sektor lahan dari sekadar sektor primer mentah menjadi mesin penggerak industri olahan lokal. Peningkatan nilai ITFL ini mengonfirmasi bahwa setiap pertumbuhan output pada sektor lahan di bawah skenario IMLAS-3 akan terdistribusi secara lebih luas sebagai input bagi sektor manufaktur, industri pengolahan, perdagangan, dan jasa terkait.
 
-```{r, echo = FALSE, warning=FALSE}
-ITFL_BAU <- mean(tabel_multiplier_sektoral$ITFL[DeskripsiSektor$Constrained == 1], na.rm = TRUE)
+```{r, keterkaitan-sektor, echo = FALSE, warning=FALSE}
 
 # ==============================================================================
-# SCRIPT LOOPING: MENGHITUNG TFL DAN ITFL DARI Leontief_Inverse_full_list
-# Periode: 21 Tahun (2025 - 2045)
+# SCRIPT PERBAIKAN: PERHITUNGAN TFL DAN ITFL SIMULASI (SDA & SEKTOR LAINNYA)
 # ==============================================================================
 
-num_years_full <- length(Leontief_Inverse_full_list) # 21 tahun (2025:2045)
-years      <- rangeTahun
+# 1. Tentukan jumlah tahun berdasarkan panjang list Leontief Inverse
+num_years_full <- length(Leontief_Inverse_full_list)
 
-# Inisialisasi List Penyimpan
-TFL_list  <- vector("list", num_years_full)
-ITFL_list <- vector("list", num_years_full)
+# Buat vektor tahun dinamis agar jumlah elemen SAMA PERSIS dengan num_years_full
+years_sim <- thDasar:(thDasar + num_years_full - 1)
 
-names(TFL_list)  <- paste0("Year_", years)
-names(ITFL_list) <- paste0("Year_", years)
-
-# Inisialisasi Matriks/Data Frame untuk Rekapitulasi (66 Sektor x 21 Tahun)
+# Inisialisasi Matriks Rekapitulasi (jml_sektor x num_years_full)
 TFL_matrix  <- matrix(0, nrow = jml_sektor, ncol = num_years_full)
 ITFL_matrix <- matrix(0, nrow = jml_sektor, ncol = num_years_full)
 
-colnames(TFL_matrix)  <- paste0("TFL_", years)
-colnames(ITFL_matrix) <- paste0("ITFL_", years)
+# Nama kolom disesuaikan dengan tahun simulasi presisi
+colnames(TFL_matrix)  <- paste0("TFL_", years_sim)
+colnames(ITFL_matrix) <- paste0("ITFL_", years_sim)
 
 rownames(TFL_matrix)  <- namaSektor
 rownames(ITFL_matrix) <- namaSektor
 
 # ------------------------------------------------------------------------------
-# LOOPING PERHITUNGAN TFL & ITFL
+# 2. LOOPING PERHITUNGAN TFL & ITFL PER TAHUN
 # ------------------------------------------------------------------------------
 for (t in 1:num_years_full) {
-
-  # A. Ambil matriks Leontief Inverse tahun ke-t
-  L_t <- Leontief_Inverse_full_list[[t]]
-
-  # B. Hitung Total Forward Linkage (TFL) = Penjumlahan Baris pada Invers Leontief
-  tfl_t <- rowSums(L_t)
-
-  # C. Hitung Indeks Total Forward Linkage (ITFL) = TFL / mean(TFL)
+  L_t    <- Leontief_Inverse_full_list[[t]]
+  tfl_t  <- rowSums(L_t)
   itfl_t <- tfl_t / mean(tfl_t)
-
-  # D. Simpan ke dalam List
-  TFL_list[[t]]  <- tfl_t
-  ITFL_list[[t]] <- itfl_t
-
-  # E. Simpan ke dalam Matriks Rekapitulasi
+  
   TFL_matrix[, t]  <- tfl_t
   ITFL_matrix[, t] <- itfl_t
 }
 
 # ------------------------------------------------------------------------------
-# KONVERSI MENJADI DATA FRAME RAPI
+# 3. KONVERSI KE DATA FRAME & FILTERING SEKTOR SDA (CONSTRAINED)
 # ------------------------------------------------------------------------------
-
-# Data Frame TFL (2025 - 2045)
-df_TFL_simulasi <- as.data.frame(TFL_matrix) %>%
-  mutate(
-    id_Sektor   = kolom_Sektor,
-    nama_Sektor = namaSektor,
-    .before     = 1
-  )
-
-# Data Frame ITFL (2025 - 2045)
 df_ITFL_simulasi <- as.data.frame(ITFL_matrix) %>%
   mutate(
     id_Sektor   = kolom_Sektor,
@@ -2273,16 +2329,12 @@ df_ITFL_simulasi <- as.data.frame(ITFL_matrix) %>%
     .before     = 1
   )
 
-# Ekstraksi Vektor Constrained dari DeskripsiSektor (66 sektor)
 v_constrained <- as.numeric(Constrained)
 v_constrained[is.na(v_constrained)] <- 0
 
-# Identifikasi Kolom Numerik ITFL (Tahun 2025 s.d. 2045)
 kolom_itfl <- grep("^ITFL_", colnames(df_ITFL_simulasi), value = TRUE)
 
-# Perkalian Elemen Demi Elemen (Sweep / Element-wise Multiplication)
-# Sektor dengan Constrained = 1 akan mempertahankan nilai ITFL-nya
-# Sektor dengan Constrained = 0 akan bernilai 0
+# Masking sektor SDA (Constrained == 1)
 matriks_itfl_constrained <- sweep(
   as.matrix(df_ITFL_simulasi[, kolom_itfl]),
   1,
@@ -2290,7 +2342,6 @@ matriks_itfl_constrained <- sweep(
   FUN = "*"
 )
 
-# Pembentukan Data Frame Hasil
 df_ITFL_constrained <- data.frame(
   id_Sektor   = df_ITFL_simulasi$id_Sektor,
   nama_Sektor = df_ITFL_simulasi$nama_Sektor,
@@ -2299,121 +2350,104 @@ df_ITFL_constrained <- data.frame(
   check.names = FALSE
 )
 
-# Hitung ITFL_BAU dengan perkalian tagging Constrained (Sektor non-lahan = 0)
-itfl_bau_constrained <- tabel_multiplier_sektoral$ITFL * v_constrained
-ITFL_BAU <- mean(itfl_bau_constrained, na.rm = TRUE) # Pembagi tetap 66 sektor
-
-# Hitung Rerata Simulasi LAS terhadap Seluruh Baris (66 Sektor)
-kolom_itfl <- grep("^ITFL_", colnames(df_ITFL_constrained), value = TRUE)
+# Hitung Rata-rata ITFL khusus Sektor SDA (Constrained = 1)
+n_sektor_sda <- sum(v_constrained == 1)
 
 df_rerata_ITFL <- df_ITFL_constrained %>%
+  filter(Constrained == 1) %>%
   summarise(across(all_of(kolom_itfl), ~ mean(.x, na.rm = TRUE))) %>%
   pivot_longer(
-    cols = everything(),
-    names_to = "Tahun",
+    cols      = everything(),
+    names_to  = "Tahun",
     values_to = "ITFL_LAS123"
   ) %>%
   mutate(
-    Tahun = as.numeric(gsub("ITFL_", "", Tahun)),
-    ITFL_BAU = ITFL_BAU
+    Tahun    = as.numeric(gsub("ITFL_", "", Tahun)),
+    ITFL_BAU = mean(tabel_multiplier_sektoral$ITFL[v_constrained == 1], na.rm = TRUE)
   )
 
-write_xlsx(df_rerata_ITFL, "Final_Keterkaitan Sektor_SOLUSI_PADAGIMO.xlsx")
+# Export File Excel
+write_xlsx(df_rerata_ITFL, "Final_Keterkaitan_Sektor_SOLUSI_PADAGIMO.xlsx")
 
-# ==============================================================================
-# SCRIPT PERBAIKAN: DYNAMIC CALLOUT LABELS UNTUK PROYEKSI ITFL
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# 4. PLOT GRAFIK PROYEKSI ITFL (TAMPILAN PRESISI & DINAMIS)
+# ------------------------------------------------------------------------------
+th_awal  <- min(df_rerata_ITFL$Tahun, na.rm = TRUE)
+th_akhir <- max(df_rerata_ITFL$Tahun, na.rm = TRUE)
 
-# 1. Tentukan Tahun Awal dan Tahun Akhir secara Dinamis dari Data
-th_awal  <- min(df_rerata_ITFL$Tahun, na.rm = TRUE) # Otomatis 2024 atau 2025
-th_akhir <- max(df_rerata_ITFL$Tahun, na.rm = TRUE) # Otomatis 2049
-
-# 2. Ambil Nilai Tepat di Titik Awal dan Titik Akhir
 val_awal_bau  <- df_rerata_ITFL$ITFL_BAU[df_rerata_ITFL$Tahun == th_awal][1]
 val_akhir_bau <- df_rerata_ITFL$ITFL_BAU[df_rerata_ITFL$Tahun == th_akhir][1]
 val_akhir_las <- df_rerata_ITFL$ITFL_LAS123[df_rerata_ITFL$Tahun == th_akhir][1]
 
-# Format Angka (4 Desimal)
 lbl_awal_bau  <- number(val_awal_bau, accuracy = 0.0001)
 lbl_akhir_bau <- number(val_akhir_bau, accuracy = 0.0001)
 lbl_akhir_las <- number(val_akhir_las, accuracy = 0.0001)
 
-# 3. Hitung Skala Vertikal Otomatis untuk Offset
-y_min <- min(c(df_rerata_ITFL$ITFL_BAU, df_rerata_ITFL$ITFL_LAS123), na.rm = TRUE)
-y_max <- max(c(df_rerata_ITFL$ITFL_BAU, df_rerata_ITFL$ITFL_LAS123), na.rm = TRUE)
-y_range <- y_max - y_min
+# Skala Vertikal Dinamis untuk Offset Callout Box
+y_min   <- min(c(df_rerata_ITFL$ITFL_BAU, df_rerata_ITFL$ITFL_LAS123), na.rm = TRUE)
+y_max   <- max(c(df_rerata_ITFL$ITFL_BAU, df_rerata_ITFL$ITFL_LAS123), na.rm = TRUE)
+y_range <- ifelse(y_max == y_min, 0.05, y_max - y_min)
 
-# Offset proporsional 6% dari total rentang sumbu Y
-offset_y <- y_range * 0.06
+offset_y <- y_range * 0.07
 
-# 4. Plot Grafik dengan Koordinat Presisi Ujung Kiri dan Ujung Kanan
 p_tren_ITFL <- ggplot(df_rerata_ITFL, aes(x = Tahun)) +
-  # --- Line & Point ---
+  # --- Lines & Points ---
   geom_line(aes(y = ITFL_LAS123, color = "IMLaS-3"), linewidth = 1.1) +
   geom_point(aes(y = ITFL_LAS123, color = "IMLaS-3"), size = 2.5) +
-
+  
   geom_line(aes(y = ITFL_BAU, color = "BAU"), linewidth = 1.1) +
   geom_point(aes(y = ITFL_BAU, color = "BAU"), size = 2.5) +
 
-  # --- GARIS PENUNJUK (CALLOUT LINES) ---
-  # Garis Penunjuk Titik Awal (Ujung Kiri)
-  annotate("segment", x = th_awal + 0.2, xend = th_awal + 1.8, 
+  # --- Callout Lines ---
+  annotate("segment", x = th_awal + 0.2, xend = th_awal + 1.8,
            y = val_awal_bau, yend = val_awal_bau + offset_y,
            color = "gray40", linewidth = 0.6) +
 
-  # Garis Penunjuk IMLaS-3 Titik Akhir (Ujung Kanan)
-  annotate("segment", x = th_akhir - 0.2, xend = th_akhir - 2.2, 
+  annotate("segment", x = th_akhir - 0.2, xend = th_akhir - 2.2,
            y = val_akhir_las, yend = val_akhir_las + offset_y,
            color = "gray40", linewidth = 0.6) +
 
-  # Garis Penunjuk BAU Titik Akhir (Ujung Kanan)
-  annotate("segment", x = th_akhir - 0.2, xend = th_akhir - 2.2, 
+  annotate("segment", x = th_akhir - 0.2, xend = th_akhir - 2.2,
            y = val_akhir_bau, yend = val_akhir_bau - offset_y,
            color = "gray40", linewidth = 0.6) +
 
-  # --- KOTAK LABEL NILAI ---
-  # Label Titik Awal (Kiri)
-  annotate("label", x = th_awal + 2.0, y = val_awal_bau + offset_y + (y_range * 0.02), 
-           label = lbl_awal_bau, fontface = "bold", fill = "#EAEAEA", color = "black", 
+  # --- Callout Label Boxes ---
+  annotate("label", x = th_awal + 2.0, y = val_awal_bau + offset_y + (y_range * 0.02),
+           label = lbl_awal_bau, fontface = "bold", fill = "#EAEAEA", color = "black",
            size = 4, label.padding = unit(0.35, "lines")) +
 
-  # Label Titik Akhir IMLaS-3 (Kanan)
-  annotate("label", x = th_akhir - 2.8, y = val_akhir_las + offset_y + (y_range * 0.02), 
-           label = lbl_akhir_las, fontface = "bold", fill = "#EAEAEA", color = "black", 
+  annotate("label", x = th_akhir - 2.8, y = val_akhir_las + offset_y + (y_range * 0.02),
+           label = lbl_akhir_las, fontface = "bold", fill = "#EAEAEA", color = "black",
            size = 4, label.padding = unit(0.35, "lines")) +
 
-  # Label Titik Akhir BAU (Kanan)
-  annotate("label", x = th_akhir - 2.8, y = val_akhir_bau - offset_y - (y_range * 0.02), 
-           label = lbl_akhir_bau, fontface = "bold", fill = "#EAEAEA", color = "black", 
+  annotate("label", x = th_akhir - 2.8, y = val_akhir_bau - offset_y - (y_range * 0.02),
+           label = lbl_akhir_bau, fontface = "bold", fill = "#EAEAEA", color = "black",
            size = 4, label.padding = unit(0.35, "lines")) +
 
-  # --- Skala dan Warna ---
+  # --- Color & Axes Formatting ---
   scale_color_manual(
-    name = NULL,
+    name   = NULL,
     values = c("BAU" = "#4178BE", "IMLaS-3" = "#C0392B")
   ) +
-  scale_x_continuous(breaks = seq(2025, 2049, by = 5), limits = c(th_awal - 1, th_akhir + 1.5)) +
+  scale_x_continuous(breaks = seq(th_awal, th_akhir, by = 5), limits = c(th_awal - 1, th_akhir + 1.5)) +
   scale_y_continuous(labels = number_format(accuracy = 0.01), limits = c(y_min * 0.9, y_max * 1.15)) +
 
-  # --- Judul dan Sumbu ---
   labs(
-    title = "Proyeksi Keterkaitan Kedepan Sektor SDA\n2024–2049",
-    x = "Tahun",
-    y = "Indeks Total Forward Linkage"
+    title = "Proyeksi Keterkaitan Kedepan Sektor SDA\n2024–2045",
+    x     = "Tahun",
+    y     = "Indeks Total Forward Linkage"
   ) +
 
-  # --- Tema ---
   theme_minimal(base_size = 13) +
   theme(
-    plot.title = element_text(face = "bold", hjust = 0.5, size = 14, color = "gray20"),
-    axis.title.y = element_text(color = "gray30", size = 12),
-    axis.text = element_text(color = "gray20"),
-    legend.position = "bottom",
+    plot.title       = element_text(face = "bold", hjust = 0.5, size = 14, color = "gray20"),
+    axis.title.y     = element_text(color = "gray30", size = 12),
+    axis.text        = element_text(color = "gray20"),
+    legend.position  = "bottom",
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank()
   )
 
-# Tampilkan Plot
 print(p_tren_ITFL)
 
 ```
