@@ -470,6 +470,24 @@ df_tabel_kuadran_ksm <- datatable(
 df_tabel_kuadran_ksm
 
 
+# Simpan Grafik High-Resolution
+ggsave(
+  filename = "linkagePendek.png", 
+  plot     = p_linkagePendek, 
+  width    = 12, 
+  height   = 8.5, 
+  dpi      = 300
+)
+
+ggsave(
+  filename = "linkageKSM.png", 
+  plot     = p_linkage_ksm, 
+  width    = 12, 
+  height   = 8.5, 
+  dpi      = 300
+)
+
+
 
 ```
 
@@ -718,6 +736,41 @@ p_import_colored <- ggplot(top15_import_lahan, aes(x = reorder(nama_Sektor, Impo
 # ------------------------------------------------------------------------------
 
 p_output_colored
+
+# Simpan Grafik High-Resolution
+ggsave(
+  filename = "output.png", 
+  plot     = p_output_colored, 
+  width    = 12, 
+  height   = 8.5, 
+  dpi      = 300
+)
+
+ggsave(
+  filename = "income.png", 
+  plot     = p_income_colored, 
+  width    = 12, 
+  height   = 8.5, 
+  dpi      = 300
+)
+
+
+ggsave(
+  filename = "labor.png", 
+  plot     = p_labour_colored, 
+  width    = 12, 
+  height   = 8.5, 
+  dpi      = 300
+)
+
+
+ggsave(
+  filename = "import.png", 
+  plot     = p_import_colored, 
+  width    = 12, 
+  height   = 8.5, 
+  dpi      = 300
+)
 
 
 ```
