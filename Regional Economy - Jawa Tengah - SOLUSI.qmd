@@ -1237,7 +1237,7 @@ knitr::kable(
   caption = "PDRB PADAGIMO (Juta Rupiah)", # <-- Judul Tabel
   digits = 2,
   format.args = list(big.mark = ","),
-  col.names = c("Year","BAU", "LAS 1", "LAS 1B", "LAS 12", "LAS 123"),
+  col.names = c("Year","BAU", "IMLaS 1", "IMLaS 1B", "IMLaS 2", "IMLaS 3"),
   align = c("c", "r", "r", "r", "r", "r")
 )
 #Line chart PDRB BAU, LAS1, LAS1+2, LAS1+2+3 seluruh PADAGIMO
@@ -1256,12 +1256,12 @@ df_2045 <- plot_df %>%
     Scenario = recode(
       Scenario,
       "pdrb_BAU"    = "BAU",
-      "pdrb_LAS1"   = "LAS 1",
-      "pdrb_LAS1B"  = "LAS 1B",
-      "pdrb_LAS12"  = "LAS 12",
-      "pdrb_LAS123" = "LAS 123"
+      "pdrb_LAS1"   = "IMLaS 1",
+      "pdrb_LAS1B"  = "IMLaS 1B",
+      "pdrb_LAS12"  = "IMLaS 2",
+      "pdrb_LAS123" = "IMLaS 3"
     ),
-    Scenario = factor(Scenario, levels = c("BAU", "LAS 1", "LAS 1B", "LAS 12", "LAS 123"))
+    Scenario = factor(Scenario, levels = c("BAU", "IMLaS 1", "IMLaS 1B", "IMLaS 2", "IMLaS 3"))
   )
 
 # Define custom Y-axis lower bound (or calculate dynamically)
@@ -1277,10 +1277,10 @@ ggplot(df_2045, aes(x = Scenario, y = PDRB, fill = Scenario)) +
   scale_fill_manual(
     values = c(
       "BAU"     = "#D95F02",
-      "LAS 1"   = "#1B9E77",
-      "LAS 1B"  = "#00aef2",
-      "LAS 12"  = "#E78AC3",
-      "LAS 123" = "#2CA02C"
+      "IMLaS 1"   = "#1B9E77",
+      "IMLaS 1B"  = "#00aef2",
+      "IMLaS 2"  = "#E78AC3",
+      "IMLaS 3" = "#2CA02C"
     )
   ) +
   scale_y_continuous(labels = scales::comma) +
@@ -1431,20 +1431,20 @@ lbl_las_2045 <- comma(val_las_2045)
 # 3. Plot Grafik
 hasil_simulasi_label <- ggplot(plot_df, aes(x = Year)) +
   # --- Line & Point untuk Setiap Skenario ---
-  geom_line(aes(y = pdrb_BAU, color = "BAU Scenario"), linewidth = 1.1) +
-  geom_point(aes(y = pdrb_BAU, color = "BAU Scenario"), size = 2.5) +
+  geom_line(aes(y = pdrb_BAU, color = "BAU"), linewidth = 1.1) +
+  geom_point(aes(y = pdrb_BAU, color = "BAU"), size = 2.5) +
 
-  geom_line(aes(y = pdrb_LAS1, color = "LAS1 Scenario"), linewidth = 1.1) +
-  geom_point(aes(y = pdrb_LAS1, color = "LAS1 Scenario"), size = 2.5) +
+  geom_line(aes(y = pdrb_LAS1, color = "IMLaS-1"), linewidth = 1.1) +
+  geom_point(aes(y = pdrb_LAS1, color = "IMLaS-1"), size = 2.5) +
 
-  geom_line(aes(y = pdrb_LAS1B, color = "LAS1B Scenario"), linewidth = 1.1) +
-  geom_point(aes(y = pdrb_LAS1B, color = "LAS1B Scenario"), size = 2.5) +
+  geom_line(aes(y = pdrb_LAS1B, color = "IMLaS-1B"), linewidth = 1.1) +
+  geom_point(aes(y = pdrb_LAS1B, color = "IMLaS-1B"), size = 2.5) +
 
-  geom_line(aes(y = pdrb_LAS12, color = "LAS12 Scenario"), linewidth = 1.1) +
-  geom_point(aes(y = pdrb_LAS12, color = "LAS12 Scenario"), size = 2.5) +
+  geom_line(aes(y = pdrb_LAS12, color = "IMLaS-2"), linewidth = 1.1) +
+  geom_point(aes(y = pdrb_LAS12, color = "IMLaS-2"), size = 2.5) +
 
-  geom_line(aes(y = pdrb_LAS123, color = "LAS123 Scenario"), linewidth = 1.1) +
-  geom_point(aes(y = pdrb_LAS123, color = "LAS123 Scenario"), size = 2.5) +
+  geom_line(aes(y = pdrb_LAS123, color = "IMLaS-3"), linewidth = 1.1) +
+  geom_point(aes(y = pdrb_LAS123, color = "IMLaS-3"), size = 2.5) +
 
   # --- Garis Penunjuk / Callout Pointer Lines (Gaya Excel) ---
   # Garis penunjuk nilai awal 2025
@@ -1473,11 +1473,11 @@ hasil_simulasi_label <- ggplot(plot_df, aes(x = Year)) +
   scale_color_manual(
     name = "Scenario",
     values = c(
-      "BAU Scenario"    = "#D95F02",
-      "LAS1 Scenario"   = "#1B9E77",
-      "LAS1B Scenario"  = "#00AEF2",
-      "LAS12 Scenario"  = "#E7298A",
-      "LAS123 Scenario" = "#7570B3"
+      "BAU"    = "#D95F02",
+      "IMLaS-1"   = "#1B9E77",
+      "IMLaS-1B"  = "#00AEF2",
+      "IMLaS-2"  = "#E7298A",
+      "IMLaS-3" = "#7570B3"
     )
   ) +
   scale_x_continuous(breaks = seq(2025, 2045, by = 5), limits = c(2024.5, 2045.5)) +
